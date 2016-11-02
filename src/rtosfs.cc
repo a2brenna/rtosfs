@@ -1,47 +1,19 @@
-#include <fuse.h>
 #include <boost/program_options.hpp>
 #include <string>
 #include <iostream>
 #include <memory>
 
+#define FUSE_USE_VERSION 26
+#include <fuse.h>
+
 #include <smpl.h>
 #include <smplsocket.h>
+
+#include "operations.h"
 
 namespace po = boost::program_options;
 
 static std::unique_ptr<smpl::Channel> rtos;
-
-static struct fuse_operations xmp_oper = {
-/*
-    .init       = xmp_init,
-    .getattr    = xmp_getattr,
-    .access     = xmp_access,
-    .readlink   = xmp_readlink,
-    .readdir    = xmp_readdir,
-    .mknod      = xmp_mknod,
-    .mkdir      = xmp_mkdir,
-    .symlink    = xmp_symlink,
-    .unlink     = xmp_unlink,
-    .rmdir      = xmp_rmdir,
-    .rename     = xmp_rename,
-    .link       = xmp_link,
-    .chmod      = xmp_chmod,
-    .chown      = xmp_chown,
-    .truncate   = xmp_truncate,
-    .utimens    = xmp_utimens,
-    .open       = xmp_open,
-    .read       = xmp_read,
-    .write      = xmp_write,
-    .statfs     = xmp_statfs,
-    .release    = xmp_release,
-    .fsync      = xmp_fsync,
-    .fallocate  = xmp_fallocate,
-    .setxattr   = xmp_setxattr,
-    .getxattr   = xmp_getxattr,
-    .listxattr  = xmp_listxattr,
-    .removexattr	= xmp_removexattr,
-*/
-};
 
 int main(int argc, char *argv[]){
 
@@ -86,5 +58,5 @@ int main(int argc, char *argv[]){
     fargv[1] = (char *)malloc(sizeof(char) * MOUNTPOINT.size());
     std::strncpy(fargv[1], MOUNTPOINT.c_str(), MOUNTPOINT.size());
 
-    return fuse_main(fargc, fargv, &xmp_oper);
+    return fuse_main(fargc, fargv, &rtos_ops, NULL);
 }
