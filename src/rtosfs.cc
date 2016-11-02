@@ -2,8 +2,14 @@
 #include <boost/program_options.hpp>
 #include <string>
 #include <iostream>
+#include <memory>
+
+#include <smpl.h>
+#include <smplsocket.h>
 
 namespace po = boost::program_options;
+
+static std::unique_ptr<smpl::Channel> rtos;
 
 static struct fuse_operations xmp_oper = {
 /*
@@ -41,11 +47,13 @@ int main(int argc, char *argv[]){
 
 	std::string RTOSD_UDS;
 	std::string FS;
+    std::string MOUNTPOINT;
 
     po::options_description desc("Options");
     desc.add_options()
         ("rtosd-uds", po::value<std::string>(&RTOSD_UDS), "Unix Domain Socket of rtosd")
         ("fs", po::value<std::string>(&FS), "File System to mount")
+        ("mountpoint", po::value<std::string>(&MOUNTPOINT), "Mountpoint to mount File System on")
     ;
 
     try{
@@ -58,12 +66,21 @@ int main(int argc, char *argv[]){
         return -1;
     }
 
-	if( (FS.size() == 0) || (RTOSD_UDS.size() == 0) ){
+	if( (FS.size() == 0) || (RTOSD_UDS.size() == 0) || (MOUNTPOINT.size() == 0) ){
         std::cout << desc << std::endl;
         return -1;
 	}
 
-    return 0;
+    std::unique_ptr<smpl::Remote_Address> rtosd_address(new smpl::Remote_UDS(RTOSD_UDS));
+    rtos = std::unique_ptr<smpl::Channel>(rtosd_address->connect());
 
-    //return fuse_main(argc, argv, &xmp_oper, NULL);
+    int fargc = 2;
+    char* fargv[2];
+
+    fargv[0] = argv[0];
+
+    fargv[1] = (char *)malloc(sizeof(char) * MOUNTPOINT.size());
+    std::strncpy(fargv[1], MOUNTPOINT.c_str(), MOUNTPOINT.size());
+
+    return fuse_main(fargc, fargv, &xmp_oper);
 }

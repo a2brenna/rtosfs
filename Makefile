@@ -11,7 +11,7 @@ all: rtosfs
 install: all
 
 rtosfs: src/rtosfs.cc
-	${CXX} ${CXXFLAGS} -o rtosfs src/rtosfs.cc -lfuse -lboost_program_options
+	${CXX} ${CXXFLAGS} -o rtosfs src/rtosfs.cc -lfuse -lboost_program_options -lsmplsocket
 
 clean:
 	rm -f rtosfs
