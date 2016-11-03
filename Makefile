@@ -10,17 +10,14 @@ all: rtosfs
 
 install: all
 
-rtosfs: src/rtosfs.cc operations.o directory.o
-	${CXX} ${CXXFLAGS} -o rtosfs src/rtosfs.cc operations.o directory.o -lfuse -lboost_program_options -lsmplsocket
+rtosfs: src/rtosfs.cc operations.o node.o
+	${CXX} ${CXXFLAGS} -o rtosfs src/rtosfs.cc operations.o node.o -lfuse -lboost_program_options -lsmplsocket
 
 operations.o: src/operations.cc src/operations.h
 	${CXX} ${CXXFLAGS} -c src/operations.cc -o operations.o
 
-directory.o: src/directory.cc src/directory.h
-	${CXX} ${CXXFLAGS} -c src/directory.cc -o directory.o
-
-file.o: src/file.cc src/file.h
-	${CXX} ${CXXFLAGS} -c src/file.cc -o file.o
+node.o: src/node.cc src/node.h
+	${CXX} ${CXXFLAGS} -c src/node.cc -o node.o
 
 clean:
 	rm -f rtosfs
