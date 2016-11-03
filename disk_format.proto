@@ -8,10 +8,11 @@ message Directory {
 }
 
 message Node {
-    Metadata metadata = 1;
-    bytes file_ref = 2;
-    string symlink = 3;
-    bytes directory_ref = 4;
+    string name = 1;
+    Metadata metadata = 2;
+    bytes file_ref = 3;
+    string symlink = 4;
+    bytes directory_ref = 5;
 }
 
 message Metadata {

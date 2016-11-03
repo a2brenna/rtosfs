@@ -8,12 +8,17 @@
 #include <string>
 
 class Node {
-    /*
+
     public:
-        user_id
-        group_id
-        permissions
-    */
+        Node();
+        Node(const uint32_t &uid, const uint32_t &gid, const uint64_t &status);
+
+    private:
+        uint32_t _uid;
+        uint32_t _gid;
+        uint64_t _status;
+        //timestamps?
+
 };
 
 class Directory : public Node {
@@ -31,12 +36,18 @@ class Directory : public Node {
 
 class File : public Node {
 
+    public:
+        File(const Ref &ref, const uint32_t &uid, const uint32_t &gid, const uint64_t &status);
+
     private:
         Ref _ref;
 
 };
 
 class Symlink : public Node {
+
+    public:
+        Symlink(const std::string &target, const uint32_t &uid, const uint32_t &gid, const uint64_t &status);
 
     private:
         std::string _target;
