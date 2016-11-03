@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package rtosfs;
+
+message Directory {
+    repeated Node nodes = 1;
+
+}
+
+message Node {
+    Metadata metadata = 1;
+    bytes file_ref = 2;
+    string symlink = 3;
+    bytes directory_ref = 4;
+}
+
+message Metadata {
+    uint32 uid = 1;
+    uint32 gid = 2;
+    uint64 status = 3;
+}
