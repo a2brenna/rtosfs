@@ -55,8 +55,8 @@ int main(int argc, char *argv[]){
 
     fargv[0] = argv[0];
 
-    fargv[1] = (char *)malloc(sizeof(char) * MOUNTPOINT.size());
-    std::strncpy(fargv[1], MOUNTPOINT.c_str(), MOUNTPOINT.size());
+    fargv[1] = (char *)malloc(sizeof(char) * MOUNTPOINT.size() + 1);
+    std::strncpy(fargv[1], MOUNTPOINT.c_str(), MOUNTPOINT.size() + 1);
 
     return fuse_main(fargc, fargv, &rtos_ops, NULL);
 }
