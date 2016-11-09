@@ -8,11 +8,9 @@ message Directory {
 
 message Node {
     string name = 1;
-    Metadata metadata = 2;
 
-    bytes file_ref = 3;
-    string symlink = 4;
-    bytes directory_ref = 5;
+    Metadata metadata = 2;
+    Value value = 3;
 }
 
 message Metadata {
@@ -29,3 +27,10 @@ message Timespec {
     uint64 ts_seconds = 1;
     uint32 ts_nanos = 2;
 }
+
+message Value {
+    bytes file_ref = 1;
+    bytes dir_ref = 2;
+    string symlink = 3;
+}
+
