@@ -17,13 +17,13 @@ static std::unique_ptr<smpl::Channel> rtos;
 
 int main(int argc, char *argv[]){
 
-	std::string RTOSD_UDS;
+	std::string RTOSD;
 	std::string FS;
     std::string MOUNTPOINT;
 
     po::options_description desc("Options");
     desc.add_options()
-        ("rtosd-uds", po::value<std::string>(&RTOSD_UDS), "Unix Domain Socket of rtosd")
+        ("rtosd", po::value<std::string>(&RTOSD), "Unix Domain Socket of rtosd")
         ("fs", po::value<std::string>(&FS), "File System to mount")
         ("mountpoint", po::value<std::string>(&MOUNTPOINT), "Mountpoint to mount File System on")
     ;
@@ -42,12 +42,12 @@ int main(int argc, char *argv[]){
         return -1;
     }
 
-	if( (FS.size() == 0) || (RTOSD_UDS.size() == 0) || (MOUNTPOINT.size() == 0) ){
+	if( (FS.size() == 0) || (RTOSD.size() == 0) || (MOUNTPOINT.size() == 0) ){
         std::cout << desc << std::endl;
         return -1;
 	}
 
-    std::unique_ptr<smpl::Remote_Address> rtosd_address(new smpl::Remote_UDS(RTOSD_UDS));
+    std::unique_ptr<smpl::Remote_Address> rtosd_address(new smpl::Remote_UDS(RTOSD));
     rtos = std::unique_ptr<smpl::Channel>(rtosd_address->connect());
 
     int fargc = 2;
