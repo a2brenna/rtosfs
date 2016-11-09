@@ -9,13 +9,23 @@ message Directory {
 message Node {
     string name = 1;
     Metadata metadata = 2;
+
     bytes file_ref = 3;
     string symlink = 4;
     bytes directory_ref = 5;
 }
 
 message Metadata {
-    uint32 uid = 1;
-    uint32 gid = 2;
-    uint64 status = 3;
+    uint32 st_mode = 1;
+    uint32 st_uid = 2;
+    uint32 st_gid = 3;
+    uint32 st_size = 4;
+    Timespec st_atim = 5;
+    Timespec st_mtim = 6;
+    Timespec st_ctim = 7;
+}
+
+message Timespec {
+    uint64 ts_seconds = 1;
+    uint32 ts_nanos = 2;
 }
