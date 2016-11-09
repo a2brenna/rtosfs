@@ -1,6 +1,11 @@
 #ifndef __OPERATIONS_H__
 #define __OPERATIONS_H__
 
+#include <memory>
+#include "file_system.h"
+
+static std::unique_ptr<File_System> fs;
+
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <memory>
 
+#include <rtos/remote_store.h>
+
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 
@@ -12,8 +14,6 @@
 #include "operations.h"
 
 namespace po = boost::program_options;
-
-static std::unique_ptr<smpl::Channel> rtos;
 
 int main(int argc, char *argv[]){
 
@@ -50,8 +50,10 @@ int main(int argc, char *argv[]){
         return -1;
 	}
 
-    std::unique_ptr<smpl::Remote_Address> rtosd_address(new smpl::Remote_UDS(RTOSD));
-    rtos = std::unique_ptr<smpl::Channel>(rtosd_address->connect());
+    std::shared_ptr<smpl::Remote_Address> rtosd_address(new smpl::Remote_UDS(RTOSD));
+    std::shared_ptr<Object_Store> backend(new Remote_Store(rtosd_address));
+
+    fs = std::unique_ptr<File_System>(new File_System(FS, backend));
 
     int fargc = 2;
     char* fargv[2];
