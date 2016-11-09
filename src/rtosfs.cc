@@ -29,6 +29,7 @@ int main(int argc, char *argv[]){
     ;
 
     po::positional_options_description pos_desc;
+    pos_desc.add("rtosd", 1);
     pos_desc.add("mountpoint", 1);
 
     try{
