@@ -28,13 +28,15 @@ int main(int argc, char *argv[]){
         ("mountpoint", po::value<std::string>(&MOUNTPOINT), "Mountpoint to mount File System on")
     ;
 
+    /*
     po::positional_options_description pos_desc;
     pos_desc.add("rtosd", 1);
     pos_desc.add("mountpoint", 1);
+    */
 
     try{
         po::variables_map vm;
-        po::store(po::command_line_parser(argc, argv).options(desc).positional(pos_desc).run(), vm);
+        //po::store(po::command_line_parser(argc, argv).options(desc).positional(pos_desc).run(), vm);
         po::store(po::parse_command_line(argc, argv, desc), vm);
         po::notify(vm);
     }
