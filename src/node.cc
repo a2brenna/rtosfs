@@ -6,13 +6,12 @@ struct Timestamped_Ref {
     char reference[32];
 };
 
-Node::Node() : Node(0,0,0){
+Node::Node() : Node(0,0){
 }
 
-Node::Node(const uint32_t &uid, const uint32_t &gid, const uint64_t &status){
+Node::Node(const uint32_t &uid, const uint32_t &gid){
     _uid = uid;
     _gid = gid;
-    _status = status;
 }
 
 Directory::Directory(const Ref &ref, std::shared_ptr<Object_Store> backend){
@@ -35,11 +34,11 @@ Directory::Directory(const Ref &ref, std::shared_ptr<Object_Store> backend){
             const rtosfs::Metadata metadata = n.metadata();
 
             std::shared_ptr<Node> new_node;
-            if(n.file_ref().size() == 32){
-                new_node = std::shared_ptr<Node>(new File(Ref(n.file_ref().c_str(), 32), metadata.uid(), metadata.gid(), metadata.status()));
+            if(n.value().file_ref().size() == 32){
+                new_node = std::shared_ptr<Node>(new File(Ref(n.value().file_ref().c_str(), 32), metadata.st_uid(), metadata.st_gid()));
             }
-            else if(n.symlink().size() > 0){
-                new_node = std::shared_ptr<Node>(new Symlink(n.symlink(), metadata.uid(), metadata.gid(), metadata.status()));
+            else if(n.value().symlink().size() > 0){
+                new_node = std::shared_ptr<Node>(new Symlink(n.value().symlink(), metadata.st_uid(), metadata.st_gid()));
             }
             else{
                 //directory, handle later
@@ -55,14 +54,14 @@ Directory::Directory(const Ref &ref, std::shared_ptr<Object_Store> backend){
 
 }
 
-File::File(const Ref &ref, const uint32_t &uid, const uint32_t &gid, const uint64_t &status) :
-    Node(uid, gid, status)
+File::File(const Ref &ref, const uint32_t &uid, const uint32_t &gid) :
+    Node(uid, gid)
 {
     _ref = ref;
 }
 
-Symlink::Symlink(const std::string &target, const uint32_t &uid, const uint32_t &gid, const uint64_t &status) :
-    Node(uid, gid, status)
+Symlink::Symlink(const std::string &target, const uint32_t &uid, const uint32_t &gid) :
+    Node(uid, gid)
 {
     _target = target;
 }

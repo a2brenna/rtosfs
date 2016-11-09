@@ -11,12 +11,11 @@ class Node {
 
     public:
         Node();
-        Node(const uint32_t &uid, const uint32_t &gid, const uint64_t &status);
+        Node(const uint32_t &uid, const uint32_t &gid);
 
     private:
         uint32_t _uid;
         uint32_t _gid;
-        uint64_t _status;
         //timestamps?
 
 };
@@ -37,7 +36,7 @@ class Directory : public Node {
 class File : public Node {
 
     public:
-        File(const Ref &ref, const uint32_t &uid, const uint32_t &gid, const uint64_t &status);
+        File(const Ref &ref, const uint32_t &uid, const uint32_t &gid);
 
     private:
         Ref _ref;
@@ -47,7 +46,7 @@ class File : public Node {
 class Symlink : public Node {
 
     public:
-        Symlink(const std::string &target, const uint32_t &uid, const uint32_t &gid, const uint64_t &status);
+        Symlink(const std::string &target, const uint32_t &uid, const uint32_t &gid);
 
     private:
         std::string _target;
