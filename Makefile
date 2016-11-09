@@ -10,14 +10,17 @@ all: rtosfs
 
 install: all
 
-rtosfs: src/rtosfs.cc operations.o node.o disk_format.o
-	${CXX} ${CXXFLAGS} -o rtosfs src/rtosfs.cc operations.o node.o disk_format.o -lfuse -lboost_program_options -lsmplsocket -lprotobuf -lrrtos -lsodium
+rtosfs: src/rtosfs.cc operations.o node.o disk_format.o file_system.o
+	${CXX} ${CXXFLAGS} -o rtosfs src/rtosfs.cc operations.o node.o disk_format.o file_system.o -lfuse -lboost_program_options -lsmplsocket -lprotobuf -lrrtos -lsodium
 
 operations.o: src/operations.cc src/operations.h
 	${CXX} ${CXXFLAGS} -c src/operations.cc -o operations.o
 
 node.o: src/node.cc src/node.h src/disk_format.pb.h
 	${CXX} ${CXXFLAGS} -c src/node.cc -o node.o
+
+file_system.o: src/file_system.cc src/file_system.h src/disk_format.pb.h
+	${CXX} ${CXXFLAGS} -c src/file_system.cc -o file_system.o
 
 disk_format.o: src/disk_format.pb.h
 	${CXX} ${CXXFLAGS} -c src/disk_format.pb.cc -o disk_format.o
