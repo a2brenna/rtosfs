@@ -18,19 +18,48 @@ class E_NOT_FILE {};
 class E_BAD_DIR {};
 class E_BAD_SYM {};
 
+enum NODE_TYPE{
+	NODE_DIR,
+	NODE_FILE,
+	NODE_SYM
+};
+
+struct Timespec {
+    uint64_t ts_seconds;
+    uint32_t ts_nanos;
+};
+
+struct Inode{
+    uint32_t st_mode;
+    uint32_t st_uid;
+    uint32_t st_gid;
+    uint32_t st_size;
+    Timespec st_atim;
+    Timespec st_mtim;
+    Timespec st_ctim;
+    NODE_TYPE type;
+    char ref[32];
+};
+
 class Node {
 
     public:
-        Node(const Ref_Log &ref_log, const std::shared_ptr<Object_Store> &backend);
-        rtosfs::Inode inode();
+        Node(const Ref &log, const std::shared_ptr<Object_Store> &backend);
 
+        Inode inode();
+        void set_inode(const Inode &inode);
+
+        //Directory ops
         std::map<std::string, Node> list();
+
+        //Symlink ops
         std::string target();
+
+        //File ops
 
     private:
         std::shared_ptr<Object_Store> _backend;
-        Ref_Log _ref_log;
-
+        Ref _log;
 };
 
 class File_System {
@@ -65,7 +94,7 @@ class File_System {
          *
          * If !_sync write to _inode_cache *before* returning ptr to Node.
          */
-        Node _fetch_inode(const char *path);
+        Node _fetch_node(const char *path);
 };
 
 #endif

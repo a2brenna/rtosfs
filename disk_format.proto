@@ -10,25 +10,3 @@ message Entry {
     string name = 1;
     bytes inode_ref = 2;
 }
-
-message Inode {
-    uint32 st_mode = 1;
-    uint32 st_uid = 2;
-    uint32 st_gid = 3;
-    uint32 st_size = 4;
-    Timespec st_atim = 5;
-    Timespec st_mtim = 6;
-    Timespec st_ctim = 7;
-    Content_Type type = 8;
-    enum Content_Type {
-        DIR = 0;
-        FILE = 1;
-        SYM = 2;
-    }
-    bytes ref = 9;
-}
-
-message Timespec {
-    uint64 ts_seconds = 1;
-    uint32 ts_nanos = 2;
-}

@@ -4,32 +4,36 @@
 #include <boost/algorithm/string.hpp>
 #include <cassert>
 
-Node::Node(const Ref_Log &ref_log, const std::shared_ptr<Object_Store> &backend):
-    _ref_log(ref_log)
+const mode_t PERMISSIVE_MODE = S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH;
+
+Node::Node(const Ref &log, const std::shared_ptr<Object_Store> &backend):
+    _log(log)
 {
     _backend = backend;
 }
 
-rtosfs::Inode Node::inode(){
-    const auto top = _ref_log.latest_object();
-    rtosfs::Inode current_inode;
-    current_inode.ParseFromString(top.second.data());
-    return current_inode;
+Inode Node::inode(){
+    struct Inode i;
+    _backend->fetch_tail(_log, sizeof(Inode), (char *)(&i));
+    return i;
+}
+
+void Node::set_inode(const Inode &inode){
+    _backend->append(_log, (const char *)(&inode), sizeof(Inode));
 }
 
 std::map<std::string, Node> Node::list(){
     std::map<std::string, Node> result;
-    const auto current_inode = inode();
+    const Inode current_inode = inode();
 
-    if(current_inode.type() == rtosfs::Inode::DIR){
-        const Ref dir_ref(current_inode.ref().c_str(), 32);
+    if(current_inode.type == NODE_DIR){
+        const Ref dir_ref(current_inode.ref, 32);
         const std::string serialized_dir = _backend->fetch(dir_ref).data();
         rtosfs::Directory current_directory;
         current_directory.ParseFromString(serialized_dir);
         for(const auto &e: current_directory.entries()){
             if(result.count(e.name()) == 0){
-                const Ref inode_log_ref(e.inode_ref().c_str(), 32);
-                const Ref_Log inode_log(inode_log_ref, _backend);
+                const Ref inode_log(e.inode_ref().c_str(), 32);
 
                 result.insert(std::pair<std::string, Node>(e.name(), Node(inode_log, _backend)));
             }
@@ -46,20 +50,38 @@ std::map<std::string, Node> Node::list(){
 }
 
 File_System::File_System(const std::string &prefix, const std::shared_ptr<Object_Store> &backend):
-    _root(Ref_Log(Ref(prefix), backend), backend),
+    _root(Ref(prefix), backend),
     _backend(backend)
 {
     try{
-
+        _backend->fetch(Ref(prefix));
     }
-    catch(E_OBJECT_DNE e){
+    catch(E_OBJECT_DNE e){ //empty filesystem
+        //write new empty directory
+        rtosfs::Directory dir;
+        std::string serialized_dir;
+        dir.SerializeToString(&serialized_dir);
+        const Ref root_dir_ref = Ref();
+        const Object dir_object = Object(serialized_dir);
+        _backend->store(root_dir_ref, dir_object);
 
+        Inode inode;
+        inode.st_mode = PERMISSIVE_MODE;
     }
+}
+
+Node File_System::_fetch_node(const char *path){
+    return _root;
+}
+
+Node traverse(const char *path, const Node &node){
 
 }
 
 int File_System::getattr(const char *path, struct stat *stbuf){
     std::memset(stbuf, 0, sizeof(struct stat));
+
+    Node node = _fetch_node(path);
 
     /*
 
