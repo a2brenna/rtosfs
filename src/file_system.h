@@ -24,7 +24,7 @@ class Node {
         Node(const Ref_Log &ref_log, const std::shared_ptr<Object_Store> &backend);
         rtosfs::Inode inode();
 
-        std::map<std::string, std::shared_ptr<Node>> list();
+        std::map<std::string, Node> list();
         std::string target();
 
     private:
@@ -55,7 +55,7 @@ class File_System {
         //some sort of doubly linked tree so we can walk back up to the root,
         //updating last used timestamp/linked list position for cache
         //maintenance?
-        std::map<std::string, std::shared_ptr<Node>> _dir_cache;
+        std::map<std::string, Node> _dir_cache;
 
         /*
          * Check for path in _inode_cache first.
@@ -65,7 +65,7 @@ class File_System {
          *
          * If !_sync write to _inode_cache *before* returning ptr to Node.
          */
-        std::shared_ptr<Node> _fetch_inode(const char *path);
+        Node _fetch_inode(const char *path);
 };
 
 #endif

@@ -17,8 +17,8 @@ rtosfs::Inode Node::inode(){
     return current_inode;
 }
 
-std::map<std::string, std::shared_ptr<Node>> Node::list(){
-    std::map<std::string, std::shared_ptr<Node>> result;
+std::map<std::string, Node> Node::list(){
+    std::map<std::string, Node> result;
     const auto current_inode = inode();
 
     if(current_inode.type() == rtosfs::Inode::DIR){
@@ -31,7 +31,7 @@ std::map<std::string, std::shared_ptr<Node>> Node::list(){
                 const Ref inode_log_ref(e.inode_ref().c_str(), 32);
                 const Ref_Log inode_log(inode_log_ref, _backend);
 
-                result[e.name()] = std::shared_ptr<Node>(new Node(inode_log, _backend));
+                result.insert(std::pair<std::string, Node>(e.name(), Node(inode_log, _backend)));
             }
             else{
                 throw E_BAD_DIR();
