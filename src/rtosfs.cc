@@ -53,7 +53,7 @@ int main(int argc, char *argv[]){
     std::shared_ptr<smpl::Remote_Address> rtosd_address(new smpl::Remote_UDS(RTOSD));
     std::shared_ptr<Object_Store> backend(new Remote_Store(rtosd_address));
 
-    fs = std::unique_ptr<File_System>(new File_System(FS, backend));
+    fs = std::unique_ptr<File_System>(new File_System(FS, backend, MULTI_USER));
 
     int fargc = 2;
     char* fargv[2];
