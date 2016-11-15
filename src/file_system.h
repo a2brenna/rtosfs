@@ -6,50 +6,37 @@
 #include <rtos/ref_log.h>
 #include <map>
 
+#include "disk_format.pb.h"
+
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
+
+class E_NOT_DIR {};
+class E_NOT_SYM {};
+class E_NOT_FILE {};
+
+class E_BAD_DIR {};
+class E_BAD_SYM {};
 
 class Node {
 
     public:
         Node(const Ref_Log &ref_log, const std::shared_ptr<Object_Store> &backend);
+        rtosfs::Inode inode();
+
+        std::map<std::string, std::shared_ptr<Node>> list();
+        std::string target();
 
     private:
-        Ref_Log _ref_log;
         std::shared_ptr<Object_Store> _backend;
-        bool _dirty;
+        Ref_Log _ref_log;
 
-        virtual void sync() = 0;
-
-};
-
-class Directory : public Node{
-
-    private:
-        std::map<std::string, std::shared_ptr<Node>> _nodes;
-
-};
-
-class File : public Node{
-
-};
-
-class Symlink : public Node{
-
-    private:
-        std::string _target;
-
-};
-
-enum MODE{
-    SINGLE_USER,
-    MULTI_USER
 };
 
 class File_System {
 
     public:
-        File_System(const std::string &prefix, const std::shared_ptr<Object_Store> &backend, const MODE &mode);
+        File_System(const std::string &prefix, const std::shared_ptr<Object_Store> &backend);
 
         //Fuse operations
         int getattr(const char *path, struct stat *stbuf);
@@ -57,9 +44,18 @@ class File_System {
     private:
         Ref_Log _ref_log;
         std::shared_ptr<Object_Store> _backend;
-        MODE _mode = MULTI_USER;
 
-        std::map<std::string, std::shared_ptr<Node>> _inode_cache;
+        //TODO:
+        //Replace this with a smarter tree structure so we can invalidate
+        //directories (and all their contents) by removing its node, thereby
+        //removing all references to its contents
+        //TODO:
+        //Also some sort of linked list for lru cache eviction
+        //TODO:
+        //some sort of doubly linked tree so we can walk back up to the root,
+        //updating last used timestamp/linked list position for cache
+        //maintenance?
+        std::map<std::string, std::shared_ptr<Node>> _dir_cache;
 
         /*
          * Check for path in _inode_cache first.

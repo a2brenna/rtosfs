@@ -1,5 +1,6 @@
 #include "file_system.h"
 
+#include "disk_format.pb.h"
 #include <boost/algorithm/string.hpp>
 #include <cassert>
 
@@ -7,15 +8,47 @@ Node::Node(const Ref_Log &ref_log, const std::shared_ptr<Object_Store> &backend)
     _ref_log(ref_log)
 {
     _backend = backend;
-    _dirty = false;
 }
 
-File_System::File_System(const std::string &prefix, const std::shared_ptr<Object_Store> &backend, const MODE &mode):
+rtosfs::Inode Node::inode(){
+    const auto top = _ref_log.latest_object();
+    rtosfs::Inode current_inode;
+    current_inode.ParseFromString(top.second.data());
+    return current_inode;
+}
+
+std::map<std::string, std::shared_ptr<Node>> Node::list(){
+    std::map<std::string, std::shared_ptr<Node>> result;
+    const auto current_inode = inode();
+
+    if(current_inode.type() == rtosfs::Inode::DIR){
+        const Ref dir_ref(current_inode.ref().c_str(), 32);
+        const std::string serialized_dir = _backend->fetch(dir_ref).data();
+        rtosfs::Directory current_directory;
+        current_directory.ParseFromString(serialized_dir);
+        for(const auto &e: current_directory.entries()){
+            if(result.count(e.name()) == 0){
+                const Ref inode_log_ref(e.inode_ref().c_str(), 32);
+                const Ref_Log inode_log(inode_log_ref, _backend);
+
+                result[e.name()] = std::shared_ptr<Node>(new Node(inode_log, _backend));
+            }
+            else{
+                throw E_BAD_DIR();
+            }
+        }
+    }
+    else{
+        throw E_NOT_DIR();
+    }
+
+    return result;
+}
+
+File_System::File_System(const std::string &prefix, const std::shared_ptr<Object_Store> &backend):
     _ref_log(Ref(prefix), backend),
     _backend(backend)
 {
-    _mode = mode;
-
     try{
 
     }

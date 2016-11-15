@@ -15,7 +15,7 @@ std::ofstream _debug_log(){
 
 int rtos_getattr(const char *path, struct stat *stbuf){
     _debug_log() << "rtos_getattr " << path << std::endl;
-    return -1;
+    return fs->getattr(path, stbuf);
 }
 
 int rtos_readlink(const char *path, char *linkbuf, size_t size){
