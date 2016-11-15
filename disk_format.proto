@@ -3,17 +3,15 @@ syntax = "proto3";
 package rtosfs;
 
 message Directory {
-    repeated Node nodes = 1;
+    repeated Entry entries = 1;
 }
 
-message Node {
+message Entry {
     string name = 1;
-
-    Metadata metadata = 2;
-    Value value = 3;
+    bytes inode_ref = 2;
 }
 
-message Metadata {
+message Inode {
     uint32 st_mode = 1;
     uint32 st_uid = 2;
     uint32 st_gid = 3;
@@ -21,16 +19,16 @@ message Metadata {
     Timespec st_atim = 5;
     Timespec st_mtim = 6;
     Timespec st_ctim = 7;
+    Content_Type type = 8;
+    enum Content_Type {
+        DIR = 0;
+        FILE = 1;
+        SYM = 2;
+    }
+    bytes ref = 9;
 }
 
 message Timespec {
     uint64 ts_seconds = 1;
     uint32 ts_nanos = 2;
 }
-
-message Value {
-    bytes file_ref = 1;
-    bytes dir_ref = 2;
-    string symlink = 3;
-}
-
