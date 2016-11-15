@@ -46,7 +46,7 @@ std::map<std::string, Node> Node::list(){
 }
 
 File_System::File_System(const std::string &prefix, const std::shared_ptr<Object_Store> &backend):
-    _ref_log(Ref(prefix), backend),
+    _root(Ref_Log(Ref(prefix), backend), backend),
     _backend(backend)
 {
     try{

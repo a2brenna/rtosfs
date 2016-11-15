@@ -42,7 +42,7 @@ class File_System {
         int getattr(const char *path, struct stat *stbuf);
 
     private:
-        Ref_Log _ref_log;
+        Node _root;
         std::shared_ptr<Object_Store> _backend;
 
         //TODO:
@@ -55,7 +55,7 @@ class File_System {
         //some sort of doubly linked tree so we can walk back up to the root,
         //updating last used timestamp/linked list position for cache
         //maintenance?
-        std::map<std::string, Node> _dir_cache;
+        //std::map<std::string, Node> _dir_cache;
 
         /*
          * Check for path in _inode_cache first.
