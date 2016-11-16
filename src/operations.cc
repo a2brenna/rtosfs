@@ -3,6 +3,8 @@
 #include <fstream>
 const std::string _debug_log_file = "/tmp/rtosfs.log";
 
+std::unique_ptr<File_System> fs;
+
 std::ofstream _debug_log(){
     std::ofstream _out;
     _out.open(_debug_log_file, std::ios::app);
@@ -183,7 +185,7 @@ int rtos_fsync_dir(const char *path, int, struct fuse_file_info *){
 }
 
 void *rtos_init(struct fuse_conn_info *conn){
-
+    _debug_log() << "rtos_init " << conn << std::endl;
 }
 
 void rtos_destroy(void *){

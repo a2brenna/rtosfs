@@ -54,6 +54,7 @@ int main(int argc, char *argv[]){
     std::shared_ptr<Object_Store> backend(new Remote_Store(rtosd_address));
 
     fs = std::unique_ptr<File_System>(new File_System(FS, backend));
+    assert(fs);
 
     int fargc = 2;
     char* fargv[2];

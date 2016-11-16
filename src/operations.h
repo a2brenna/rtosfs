@@ -4,7 +4,7 @@
 #include <memory>
 #include "file_system.h"
 
-static std::unique_ptr<File_System> fs;
+extern std::unique_ptr<File_System> fs;
 
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
