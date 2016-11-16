@@ -47,7 +47,7 @@ class Node {
         Node(const Ref &log, const std::shared_ptr<Object_Store> &backend);
 
         Inode inode();
-        void set_inode(const Inode &inode);
+        void update_inode(const Inode &inode);
 
         //Directory ops
         std::map<std::string, Node> list();

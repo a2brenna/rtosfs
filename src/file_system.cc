@@ -18,7 +18,7 @@ Inode Node::inode(){
     return i;
 }
 
-void Node::set_inode(const Inode &inode){
+void Node::update_inode(const Inode &inode){
     _backend->append(_log, (const char *)(&inode), sizeof(Inode));
 }
 
@@ -49,24 +49,51 @@ std::map<std::string, Node> Node::list(){
     return result;
 }
 
+Timespec get_timespec(const std::chrono::high_resolution_clock::time_point &tp){
+    const uint64_t nanos = std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch()).count();
+    const uint64_t seconds = nanos / 1000000000;
+    Timespec r;
+    r.ts_seconds = seconds;
+    r.ts_nanos = nanos % 1000000000;
+    return r;
+}
+
 File_System::File_System(const std::string &prefix, const std::shared_ptr<Object_Store> &backend):
     _root(Ref(prefix), backend),
     _backend(backend)
 {
     try{
-        _backend->fetch(Ref(prefix));
+        _backend->fetch_tail(Ref(prefix), sizeof(Inode));
     }
     catch(E_OBJECT_DNE e){ //empty filesystem
         //write new empty directory
-        rtosfs::Directory dir;
-        std::string serialized_dir;
-        dir.SerializeToString(&serialized_dir);
         const Ref root_dir_ref = Ref();
-        const Object dir_object = Object(serialized_dir);
-        _backend->store(root_dir_ref, dir_object);
+        size_t dir_size;
+        {
+            const rtosfs::Directory dir;
+            std::string serialized_dir;
+            dir.SerializeToString(&serialized_dir);
+            const Object dir_object = Object(serialized_dir);
+            _backend->store(root_dir_ref, dir_object);
+            dir_size = serialized_dir.size();
+        }
 
         Inode inode;
-        inode.st_mode = PERMISSIVE_MODE;
+        {
+            inode.st_mode = PERMISSIVE_MODE;
+            inode.type = NODE_DIR;
+            std::memcpy(inode.ref, root_dir_ref.buf(), 32);
+            inode.st_size = dir_size;
+
+            const Timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
+            inode.st_atim = current_time;
+            inode.st_mtim = current_time;
+            inode.st_ctim = current_time;
+            inode.st_uid = 0;
+            inode.st_gid = 0;
+        }
+
+        _root.update_inode(inode);
     }
 }
 
