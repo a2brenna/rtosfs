@@ -151,10 +151,7 @@ int File_System::getattr(const char *path, struct stat *stbuf){
         stbuf->st_dev = makedev(60, 1);
 
         stbuf->st_mode = inode.st_mode;
-
-        //Currently don't support hardlinks
-        stbuf->st_nlink = 1;
-
+        stbuf->st_nlink = inode.st_nlink;
         stbuf->st_uid = inode.st_uid;
         stbuf->st_gid = inode.st_gid;
 

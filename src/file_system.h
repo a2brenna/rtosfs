@@ -29,6 +29,7 @@ struct Inode{
     uid_t st_uid;
     gid_t st_gid;
     off_t st_size;
+    nlink_t st_nlink;
     struct timespec st_atim;
     struct timespec st_mtim;
     struct timespec st_ctim;
