@@ -134,9 +134,10 @@ int rtos_setxattr(const char *path, const char *, const char *, size_t, int){
 
 }
 
-int rtos_getxattr(const char *path, const char *, char *, size_t){
-    _debug_log() << "rtos_getxattr " << path << std::endl;
-    return -1;
+int rtos_getxattr(const char *path, const char *name, char *value, size_t size){
+    const auto rval = fs->getxattr(path, name, value, size);
+    _debug_log() << "rtos_getxattr " << path  << " " << name << " " << size << " return: " << rval << std::endl;
+    return rval;
 
 }
 

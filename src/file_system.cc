@@ -139,7 +139,7 @@ Node File_System::_get_node(const char *path){
 
 int File_System::getattr(const char *path, struct stat *stbuf){
     try{
-        std::memset(stbuf, 0, sizeof(struct stat));
+        std::memset(stbuf, '\0', sizeof(struct stat));
 
         Node node = _get_node(path);
         const Inode inode = node.inode();
@@ -177,4 +177,49 @@ int File_System::getattr(const char *path, struct stat *stbuf){
         return -1;
     }
 
+}
+
+int File_System::getxattr(const char *path, const char *name, char *value, size_t size){
+    //TODO:
+    //check preconditions on name size and value size
+    try{
+        std::memset(value, '\0', size);
+
+        Node node = _get_node(path);
+        const Inode inode = node.inode();
+
+        const Ref xattr_ref(inode.xattr_ref, 32);
+
+        const std::string serialized_xattr_dict = _backend->fetch(xattr_ref).data();
+
+        rtosfs::Dictionary xattr_dict;
+        xattr_dict.ParseFromString(serialized_xattr_dict);
+
+        for(const auto &entry: xattr_dict.entries()){
+            if(std::strncmp(name, entry.name().c_str(), entry.name().size())){
+                //Manpage for getxattr states that if the size is 0 return the
+                //current size of the attribute in question
+                if(size == 0){
+                    return entry.value().size();
+                }
+                else{
+                    if(entry.value().size() >= size){
+                        std::strncpy(value, entry.value().c_str(), size);
+                        return entry.value().size();
+                    }
+                    else{
+                        return ERANGE;
+                    }
+                }
+            }
+            else{
+                continue;
+            }
+        }
+
+        return ENODATA;
+    }
+    catch(...){
+        return ENODATA;
+    }
 }

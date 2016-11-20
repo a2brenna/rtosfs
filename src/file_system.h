@@ -64,6 +64,7 @@ class File_System {
 
         //Fuse operations
         int getattr(const char *path, struct stat *stbuf);
+        int getxattr(const char *path, const char *name, char *value, size_t size);
 
     private:
         Node _root;
