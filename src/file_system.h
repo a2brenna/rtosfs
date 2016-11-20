@@ -17,6 +17,7 @@ class E_NOT_FILE {};
 
 class E_BAD_DIR {};
 class E_BAD_SYM {};
+class E_BAD_PATH {};
 
 enum NODE_TYPE{
     NODE_DIR,
@@ -71,6 +72,7 @@ class File_System {
         std::shared_ptr<Object_Store> _backend;
 
         Node _get_node(const char *path);
+        Inode _get_inode(const char *path);
 
         //TODO:
         //Replace this with a smarter tree structure so we can invalidate

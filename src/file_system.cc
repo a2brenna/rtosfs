@@ -79,6 +79,19 @@ std::map<std::string, Node> Node::list(){
 }
 */
 
+std::deque<std::string> decompose_path(const char *path){
+    //TODO: be less lazy about this, boost split will return empty strings as well
+    std::vector<std::string> d;
+    std::deque<std::string> decomposed;
+    split(d, path, boost::is_any_of("/"));
+    for(const auto &e: d){
+        if(e.size() != 0){
+            decomposed.push_back(e);
+        }
+    }
+    return decomposed;
+}
+
 File_System::File_System(const std::string &prefix, const std::shared_ptr<Object_Store> &backend):
     _root(Ref(prefix), backend),
     _backend(backend)
@@ -117,12 +130,7 @@ File_System::File_System(const std::string &prefix, const std::shared_ptr<Object
 
         _root.update_inode(inode);
     }
-}
 
-std::deque<std::string> decompose_path(const char *path){
-    std::deque<std::string> decomposed;
-    split(decomposed, path, boost::is_any_of("/"));
-    return decomposed;
 }
 
 Node File_System::_get_node(const char *path){
@@ -130,19 +138,47 @@ Node File_System::_get_node(const char *path){
 
     const std::deque<std::string> decomp_path = decompose_path(path);
     for(const auto &entry_name: decomp_path){
-        //TODO:
-        //do directory lookup
+        const auto current_inode = current_node.inode();
+        //lookup next path element in current_inode directory and then set current_inode = next
+        if(current_inode.type != NODE_DIR){
+            throw E_BAD_PATH();
+        }
+        else{
+            //get directory corresponding to current_inode
+            const Ref serialized_dir_ref(current_inode.data_ref, 32);
+            const std::string serialized_dir = _backend->fetch(serialized_dir_ref).data();
+            rtosfs::Directory dir;
+            dir.ParseFromString(serialized_dir);
+
+            //search directory for next entry
+            bool bad_path = true;
+            for(const auto &entry: dir.entries()){
+                if(entry.name() == entry_name){
+                    Node next_node(Ref(entry.inode_ref().c_str(), 32), _backend);
+                    current_node = next_node;
+                    bad_path = false;
+                    break;
+                }
+            }
+
+            if(bad_path){
+                throw E_BAD_PATH();
+            }
+        }
     }
 
     return current_node;
+}
+
+Inode File_System::_get_inode(const char *path){
+    return _get_node(path).inode();
 }
 
 int File_System::getattr(const char *path, struct stat *stbuf){
     try{
         std::memset(stbuf, '\0', sizeof(struct stat));
 
-        Node node = _get_node(path);
-        const Inode inode = node.inode();
+        const Inode inode = _get_inode(path);
 
         _debug_log() << inode << std::endl;
 
@@ -185,8 +221,7 @@ int File_System::getxattr(const char *path, const char *name, char *value, size_
     try{
         std::memset(value, '\0', size);
 
-        Node node = _get_node(path);
-        const Inode inode = node.inode();
+        const Inode inode = _get_inode(path);
 
         const Ref xattr_ref(inode.xattr_ref, 32);
 
