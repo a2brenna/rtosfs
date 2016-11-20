@@ -1,23 +1,16 @@
 #include "operations.h"
-
-#include <fstream>
-const std::string _debug_log_file = "/tmp/rtosfs.log";
+#include "debug.h"
 
 std::unique_ptr<File_System> fs;
-
-std::ofstream _debug_log(){
-    std::ofstream _out;
-    _out.open(_debug_log_file, std::ios::app);
-    return _out;
-}
 
 /*
  * const char *path is a path relative to the root of the mountpoint
  */
 
 int rtos_getattr(const char *path, struct stat *stbuf){
-    _debug_log() << "rtos_getattr " << path << std::endl;
-    return fs->getattr(path, stbuf);
+    const auto rval = fs->getattr(path, stbuf);
+    _debug_log() << "rtos_getattr " << path << " return: " << rval << std::endl;
+    return rval;
 }
 
 int rtos_readlink(const char *path, char *linkbuf, size_t size){
