@@ -10,3 +10,12 @@ message Entry {
     string name = 1;
     bytes inode_ref = 2;
 }
+
+message Dictionary {
+    repeated Dict_Entry entries = 1;
+}
+
+message Dict_Entry {
+    string name = 1;
+    string value = 2;
+}
