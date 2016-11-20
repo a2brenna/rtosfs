@@ -34,7 +34,8 @@ struct Inode{
     struct timespec st_mtim;
     struct timespec st_ctim;
     NODE_TYPE type;
-    char ref[32];
+    char data_ref[32];
+    char xattr_ref[32];
 };
 
 std::ostream &operator<<(std::ostream &out, const timespec &t);

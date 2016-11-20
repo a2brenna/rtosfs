@@ -103,7 +103,8 @@ File_System::File_System(const std::string &prefix, const std::shared_ptr<Object
         {
             inode.st_mode = S_IFDIR | 0777;
             inode.type = NODE_DIR;
-            std::memcpy(inode.ref, root_dir_ref.buf(), 32);
+            std::memcpy(inode.data_ref, root_dir_ref.buf(), 32);
+            std::memset(inode.xattr_ref, '\0', 32);
             inode.st_size = dir_size;
 
             const timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
