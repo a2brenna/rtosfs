@@ -1,10 +1,38 @@
 #include "file_system.h"
 
+#include "debug.h"
 #include "disk_format.pb.h"
-#include <boost/algorithm/string.hpp>
 #include <cassert>
 
-const mode_t PERMISSIVE_MODE = S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH;
+#include <boost/algorithm/string.hpp>
+#include <deque>
+#include <string>
+
+timespec get_timespec(const std::chrono::high_resolution_clock::time_point &tp){
+    const uint64_t nanos = tp.time_since_epoch().count();
+    const uint64_t seconds = nanos / 1000000000;
+    timespec r;
+    r.tv_sec = seconds;
+    r.tv_nsec = nanos % 1000000000;
+    return r;
+}
+
+std::ostream &operator<<(std::ostream &out, const timespec &t){
+    out << "seconds: " << t.tv_sec << " nanos: " << t.tv_nsec;
+    return out;
+}
+
+std::ostream &operator<<(std::ostream &out, const Inode &i){
+    out << "st_mode: " << i.st_mode << std::endl;
+    out << "st_uid: " << i.st_uid << std::endl;
+    out << "st_gid: " << i.st_gid << std::endl;
+    out << "st_size: " << i.st_size << std::endl;
+    out << "st_atim: " << i.st_atim << std::endl;
+    out << "st_mtim: " << i.st_mtim << std::endl;
+    out << "st_ctim: " << i.st_ctim << std::endl;
+    out << "type: " << i.type;
+    return out;
+}
 
 Node::Node(const Ref &log, const std::shared_ptr<Object_Store> &backend):
     _log(log)
@@ -22,6 +50,7 @@ void Node::update_inode(const Inode &inode){
     _backend->append(_log, (const char *)(&inode), sizeof(Inode));
 }
 
+/*
 std::map<std::string, Node> Node::list(){
     std::map<std::string, Node> result;
     const Inode current_inode = inode();
@@ -48,15 +77,7 @@ std::map<std::string, Node> Node::list(){
 
     return result;
 }
-
-Timespec get_timespec(const std::chrono::high_resolution_clock::time_point &tp){
-    const uint64_t nanos = std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch()).count();
-    const uint64_t seconds = nanos / 1000000000;
-    Timespec r;
-    r.ts_seconds = seconds;
-    r.ts_nanos = nanos % 1000000000;
-    return r;
-}
+*/
 
 File_System::File_System(const std::string &prefix, const std::shared_ptr<Object_Store> &backend):
     _root(Ref(prefix), backend),
@@ -80,12 +101,12 @@ File_System::File_System(const std::string &prefix, const std::shared_ptr<Object
 
         Inode inode;
         {
-            inode.st_mode = PERMISSIVE_MODE;
+            inode.st_mode = S_IFDIR | 0777;
             inode.type = NODE_DIR;
             std::memcpy(inode.ref, root_dir_ref.buf(), 32);
             inode.st_size = dir_size;
 
-            const Timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
+            const timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
             inode.st_atim = current_time;
             inode.st_mtim = current_time;
             inode.st_ctim = current_time;
@@ -97,50 +118,65 @@ File_System::File_System(const std::string &prefix, const std::shared_ptr<Object
     }
 }
 
-Node File_System::_fetch_node(const char *path){
-    return _root;
+std::deque<std::string> decompose_path(const char *path){
+    std::deque<std::string> decomposed;
+    split(decomposed, path, boost::is_any_of("/"));
+    return decomposed;
 }
 
-Node traverse(const char *path, const Node &node){
+Node File_System::_get_node(const char *path){
+    Node current_node = _root;
 
+    const std::deque<std::string> decomp_path = decompose_path(path);
+    for(const auto &entry_name: decomp_path){
+        //TODO:
+        //do directory lookup
+    }
+
+    return current_node;
 }
 
 int File_System::getattr(const char *path, struct stat *stbuf){
-    std::memset(stbuf, 0, sizeof(struct stat));
+    try{
+        std::memset(stbuf, 0, sizeof(struct stat));
 
-    Node node = _fetch_node(path);
+        Node node = _get_node(path);
+        const Inode inode = node.inode();
 
-    /*
+        _debug_log() << inode << std::endl;
 
-    //See linux kernel Documents/devices.txt: Major dev id 60 - 63 reserved for
-    //Local/Experimental char devices
-    //TODO: Use a nonce for the minor device id
-    stbuf->st_dev = makedev(60, 1);
+        //See linux kernel Documents/devices.txt: Major dev id 60 - 63 reserved for
+        //Local/Experimental char devices
+        //TODO: Use a nonce for the minor device id
+        stbuf->st_dev = makedev(60, 1);
 
-    stbuf->st_mode = ;
+        stbuf->st_mode = inode.st_mode;
 
-    //Currently don't support hardlinks
-    stbuf->st_nlink = 1;
+        //Currently don't support hardlinks
+        stbuf->st_nlink = 1;
 
-    stbuf->st_uid = ;
-    stbuf->st_gid = ;
+        stbuf->st_uid = inode.st_uid;
+        stbuf->st_gid = inode.st_gid;
 
-    //Currently read and write a character at a time
-    stbuf->st_size = ;
-    stbuf->st_blksize = 1;
-    stbuf->st_blocks = ;
+        //Currently read and write a character at a time
+        stbuf->st_size = inode.st_size;
+        stbuf->st_blksize = 1;
+        stbuf->st_blocks = 1;
 
-    stbuf->st_atim = ;
-    stbuf->st_mtim = ;
-    stbuf->st_ctim = ;
+        stbuf->st_atim = inode.st_atim;
+        stbuf->st_mtim = inode.st_mtim;
+        stbuf->st_ctim = inode.st_ctim;
 
-     */
+        /*
+        * UNSUPPORTED
+        */
+        stbuf->st_ino = 1;
+        stbuf->st_rdev = makedev(60,1);
 
-/*
- * UNSUPPORTED
-    stbuf->st_ino = ;
-    stbuf->st_rdev = ;
-*/
-
+        return 0;
+    }
+    catch(...){
+        return -1;
+    }
 
 }

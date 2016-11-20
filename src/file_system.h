@@ -4,7 +4,7 @@
 #include <memory>
 #include <rtos/object_store.h>
 #include <rtos/ref_log.h>
-#include <map>
+#include <time.h>
 
 #include "disk_format.pb.h"
 
@@ -19,27 +19,25 @@ class E_BAD_DIR {};
 class E_BAD_SYM {};
 
 enum NODE_TYPE{
-	NODE_DIR,
-	NODE_FILE,
-	NODE_SYM
-};
-
-struct Timespec {
-    uint64_t ts_seconds;
-    uint32_t ts_nanos;
+    NODE_DIR,
+    NODE_FILE,
+    NODE_SYM
 };
 
 struct Inode{
-    uint32_t st_mode;
-    uint32_t st_uid;
-    uint32_t st_gid;
-    uint32_t st_size;
-    Timespec st_atim;
-    Timespec st_mtim;
-    Timespec st_ctim;
+    mode_t st_mode;
+    uid_t st_uid;
+    gid_t st_gid;
+    off_t st_size;
+    struct timespec st_atim;
+    struct timespec st_mtim;
+    struct timespec st_ctim;
     NODE_TYPE type;
     char ref[32];
 };
+
+std::ostream &operator<<(std::ostream &out, const timespec &t);
+std::ostream &operator<<(std::ostream &out, const Inode &i);
 
 class Node {
 
@@ -49,18 +47,13 @@ class Node {
         Inode inode();
         void update_inode(const Inode &inode);
 
-        //Directory ops
-        std::map<std::string, Node> list();
-
-        //Symlink ops
-        std::string target();
-
-        //File ops
-
     private:
         std::shared_ptr<Object_Store> _backend;
         Ref _log;
 };
+
+std::map<std::string, Node> dir_list(const Inode &inode);
+std::string sym_target(const Inode &inode);
 
 class File_System {
 
@@ -74,6 +67,8 @@ class File_System {
         Node _root;
         std::shared_ptr<Object_Store> _backend;
 
+        Node _get_node(const char *path);
+
         //TODO:
         //Replace this with a smarter tree structure so we can invalidate
         //directories (and all their contents) by removing its node, thereby
@@ -84,17 +79,8 @@ class File_System {
         //some sort of doubly linked tree so we can walk back up to the root,
         //updating last used timestamp/linked list position for cache
         //maintenance?
-        //std::map<std::string, Node> _dir_cache;
+        //std::map<Ref, Inode> _inode_cache;
 
-        /*
-         * Check for path in _inode_cache first.
-         *
-         * If _sync don't write to _inode_cache.
-         * This forces filesystem to always fetch from _backend.
-         *
-         * If !_sync write to _inode_cache *before* returning ptr to Node.
-         */
-        Node _fetch_node(const char *path);
 };
 
 #endif
