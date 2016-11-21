@@ -71,6 +71,7 @@ class File_System {
         int readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
         int create(const char *path, mode_t mode, struct fuse_file_info *fi);
         int lock(const char *path, struct fuse_file_info *fi, int cmd, struct flock *fl);
+        int utimens(const char *path, const struct timespec tv[2]);
 
     private:
         Node _root;

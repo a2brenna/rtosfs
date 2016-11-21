@@ -410,3 +410,19 @@ int File_System::lock(const char *path, struct fuse_file_info *fi, int cmd, stru
 
     return 0;
 }
+
+int File_System::utimens(const char *path, const struct timespec tv[2]){
+    try{
+        Node current_node = _get_node(path);
+        Inode i = current_node.inode();
+
+        i.st_atim = tv[0];
+        i.st_mtim = tv[1];
+
+        current_node.update_inode(i);
+        return 0;
+    }
+    catch(E_BAD_PATH e){
+        return -1;
+    }
+}

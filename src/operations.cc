@@ -219,8 +219,7 @@ int rtos_lock(const char *path, struct fuse_file_info *fi, int cmd,
 
 int rtos_utimens(const char *path, const struct timespec tv[2]){
     _debug_log() << "rtos_utimens " << path << std::endl;
-    return -1;
-
+    return fs->utimens(path, tv);
 }
 
 int rtos_bmap(const char *path, size_t blocksize, uint64_t *idx){
