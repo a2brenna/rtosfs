@@ -458,3 +458,13 @@ int File_System::chown(const char *path, uid_t uid, gid_t gid){
         return -1;
     }
 }
+
+int File_System::open(const char *path, struct fuse_file_info *fi){
+    try{
+        const Inode i = _get_inode(path);
+        return 0;
+    }
+    catch(E_BAD_PATH e){
+        return -(ENOENT);
+    }
+}

@@ -82,10 +82,9 @@ int rtos_utime(const char *path, struct utimbuf *){
 
 }
 
-int rtos_open(const char *path, struct fuse_file_info *){
+int rtos_open(const char *path, struct fuse_file_info *fi){
     _debug_log() << "rtos_open " << path << std::endl;
-    return -1;
-
+    return fs->open(path, fi);
 }
 
 int rtos_read(const char *path, char *, size_t, off_t,

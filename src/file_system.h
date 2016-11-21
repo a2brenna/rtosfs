@@ -74,6 +74,7 @@ class File_System {
         int utimens(const char *path, const struct timespec tv[2]);
         int chown(const char *path, uid_t uid, gid_t gid);
         int chmod(const char *path, mode_t mode);
+        int open(const char *path, struct fuse_file_info *fi);
 
 
     private:
