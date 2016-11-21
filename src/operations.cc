@@ -207,10 +207,9 @@ int rtos_ftruncate(const char *path, off_t, struct fuse_file_info *){
 
 }
 
-int rtos_fgetattr(const char *path, struct stat *, struct fuse_file_info *){
+int rtos_fgetattr(const char *path, struct stat *stbuff, struct fuse_file_info *){
     _debug_log() << "rtos_fgetattr " << path << std::endl;
-    return -1;
-
+    return fs->getattr(path, stbuff);
 }
 
 int rtos_lock(const char *path, struct fuse_file_info *, int cmd,
