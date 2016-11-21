@@ -326,6 +326,7 @@ int File_System::create(const char *path, mode_t mode, struct fuse_file_info *fi
     Inode new_file_inode;
     {
         new_file_inode.st_mode = mode;
+        new_file_inode.st_nlink = 1;
 
         //TODO: set this by looking at mode
         new_file_inode.type = NODE_FILE;
