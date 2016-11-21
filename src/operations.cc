@@ -87,11 +87,10 @@ int rtos_open(const char *path, struct fuse_file_info *fi){
     return fs->open(path, fi);
 }
 
-int rtos_read(const char *path, char *, size_t, off_t,
-            struct fuse_file_info *){
+int rtos_read(const char *path, char *buf, size_t size, off_t off,
+            struct fuse_file_info *fi){
     _debug_log() << "rtos_read " << path << std::endl;
-    return -1;
-
+    return fs->read(path, buf, size, off, fi);
 }
 
 int rtos_write(const char *path, const char *, size_t, off_t,

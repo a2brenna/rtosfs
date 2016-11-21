@@ -78,7 +78,7 @@ static struct fuse_operations rtos_ops {
 	.chown = rtos_chown,
 	.truncate = rtos_truncate,
 	.utime = rtos_utime,
-	.open = rtos_open,
+	.open = NULL,
 	.read = rtos_read,
 	.write = rtos_write,
 	.statfs = rtos_statfs,
@@ -109,7 +109,7 @@ static struct fuse_operations rtos_ops {
 	.ioctl = rtos_ioctl,
 	.poll = rtos_poll,
 	.write_buf = rtos_write_buf,
-	.read_buf = rtos_read_buf,
+	.read_buf = NULL,
 	.flock = rtos_flock,
 	.fallocate = rtos_fallocate,
 };

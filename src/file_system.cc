@@ -468,3 +468,34 @@ int File_System::open(const char *path, struct fuse_file_info *fi){
         return -(ENOENT);
     }
 }
+
+int File_System::read(const char *path, char *buf, size_t size, off_t off, struct fuse_file_info *fi){
+    _debug_log() << "Read: " << path << std::endl;
+    try{
+        const Inode i = _get_inode(path);
+        if(i.type == NODE_DIR){
+            return -(EISDIR);
+        }
+        else if(i.type == NODE_SYM){
+            return -(EBADF);
+        }
+        else{
+            const Ref data_ref = Ref(i.data_ref, 32);
+
+            const std::string file = _backend->fetch(data_ref, off, size).data();
+            assert(file.size() <= size);
+            std::memcpy(buf, file.c_str(), file.size());
+
+            return file.size();
+        }
+    }
+    catch(E_BAD_PATH e){
+        return -(EBADF);
+    }
+    catch(E_DATA_DNE){
+        return 0;
+    }
+    catch(E_OBJECT_DNE e){
+        return -(EBADF);
+    }
+}
