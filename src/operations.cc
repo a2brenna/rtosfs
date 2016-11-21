@@ -112,8 +112,7 @@ int rtos_statfs(const char *path, struct statvfs *){
 
 int rtos_flush(const char *path, struct fuse_file_info *){
     _debug_log() << "rtos_flush " << path << std::endl;
-    return -1;
-
+    return 0;
 }
 
 /*
