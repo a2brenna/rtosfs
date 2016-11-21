@@ -70,6 +70,7 @@ class File_System {
         int getxattr(const char *path, const char *name, char *value, size_t size);
         int readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
         int create(const char *path, mode_t mode, struct fuse_file_info *fi);
+        int lock(const char *path, struct fuse_file_info *fi, int cmd, struct flock *fl);
 
     private:
         Node _root;

@@ -211,11 +211,10 @@ int rtos_fgetattr(const char *path, struct stat *stbuff, struct fuse_file_info *
     return fs->getattr(path, stbuff);
 }
 
-int rtos_lock(const char *path, struct fuse_file_info *, int cmd,
-            struct flock *){
+int rtos_lock(const char *path, struct fuse_file_info *fi, int cmd,
+            struct flock *fl){
     _debug_log() << "rtos_lock " << path << std::endl;
-    return -1;
-
+    return fs->lock(path, fi, cmd, fl);
 }
 
 int rtos_utimens(const char *path, const struct timespec tv[2]){

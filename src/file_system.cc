@@ -392,3 +392,21 @@ int File_System::create(const char *path, mode_t mode, struct fuse_file_info *fi
         return 0;
     }
 }
+
+//TODO: ACTUALLY IMPLEMENT LOCKING
+int File_System::lock(const char *path, struct fuse_file_info *fi, int cmd, struct flock *fl){
+    if(cmd == F_GETLK){
+
+    }
+    else if(cmd == F_SETLK){
+
+    }
+    else if(cmd == F_SETLKW){
+
+    }
+    else{
+        assert(false);
+    }
+
+    return 0;
+}
