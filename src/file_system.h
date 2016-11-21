@@ -66,6 +66,7 @@ class File_System {
         //Fuse operations
         int getattr(const char *path, struct stat *stbuf);
         int getxattr(const char *path, const char *name, char *value, size_t size);
+        int readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
 
     private:
         Node _root;

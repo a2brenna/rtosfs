@@ -36,10 +36,10 @@ int rtos_setxattr(const char *, const char *, const char *, size_t, int);
 int rtos_getxattr(const char *, const char *, char *, size_t);
 int rtos_listxattr(const char *, char *, size_t);
 int rtos_removexattr(const char *, const char *);
-int rtos_opendir(const char *, struct fuse_file_info *);
+//int rtos_opendir(const char *, struct fuse_file_info *);
 int rtos_readdir(const char *, void *, fuse_fill_dir_t, off_t,
         struct fuse_file_info *);
-int rtos_releasedir(const char *, struct fuse_file_info *);
+//int rtos_releasedir(const char *, struct fuse_file_info *);
 int rtos_fsync_dir(const char *, int, struct fuse_file_info *);
 void *rtos_init(struct fuse_conn_info *conn);
 void rtos_destroy(void *);
@@ -89,9 +89,9 @@ static struct fuse_operations rtos_ops {
 	.getxattr = rtos_getxattr,
 	.listxattr = rtos_listxattr,
 	.removexattr = rtos_removexattr,
-	.opendir = rtos_opendir,
+	.opendir = NULL,
 	.readdir = rtos_readdir,
-	.releasedir = rtos_releasedir,
+	.releasedir = NULL,
 	.fsyncdir = rtos_fsync_dir,
 	.init  = rtos_init,
 	.destroy = rtos_destroy,

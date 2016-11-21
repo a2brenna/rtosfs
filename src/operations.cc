@@ -153,24 +153,26 @@ int rtos_removexattr(const char *path, const char *){
 
 }
 
+/*
 int rtos_opendir(const char *path, struct fuse_file_info *){
     _debug_log() << "rtos_opendir " << path << std::endl;
-    return -1;
-
+    return 1;
 }
+*/
 
-int rtos_readdir(const char *path, void *, fuse_fill_dir_t, off_t,
-        struct fuse_file_info *){
+int rtos_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,
+        struct fuse_file_info *fi){
     _debug_log() << "rtos_readdir " << path << std::endl;
-    return -1;
-
+    return fs->readdir(path, buf, filler, offset, fi);
 }
 
+/*
 int rtos_releasedir(const char *path, struct fuse_file_info *){
     _debug_log() << "rtos_releasedir " << path << std::endl;
-    return -1;
+    return 0;
 
 }
+*/
 
 int rtos_fsync_dir(const char *path, int, struct fuse_file_info *){
     _debug_log() << "rtos_fsync_dir " << path << std::endl;
