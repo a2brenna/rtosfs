@@ -209,8 +209,8 @@ int File_System::getattr(const char *path, struct stat *stbuf){
 
         return 0;
     }
-    catch(...){
-        return -1;
+    catch(E_BAD_PATH e){
+        return -(ENOENT);
     }
 
 }
@@ -256,5 +256,44 @@ int File_System::getxattr(const char *path, const char *name, char *value, size_
     }
     catch(...){
         return ENODATA;
+    }
+}
+
+int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
+    (void) offset;
+    (void) fi;
+
+    //TODO: THIS IS BROKEN, for some reason path is not set when this function call is made... I assume its trying to use the fuse_file_info *...
+
+    _debug_log() << "Readdir: " << "/" << std::endl;
+
+    const std::string dir_path("/");
+
+    const Inode inode = _get_inode("/");
+    if(inode.type != NODE_DIR){
+        return EBADF;
+    }
+    else{
+        try{
+            const std::string serialized_dir = _backend->fetch(Ref(inode.data_ref, 32)).data();
+            rtosfs::Directory dir;
+            dir.ParseFromString(serialized_dir);
+
+            for(const auto &e: dir.entries()){
+                const std::string entry_path = dir_path + "/" + e.name();
+                const auto entry_inode = _get_inode(entry_path.c_str());
+
+                struct stat st;
+                st.st_mode = entry_inode.st_mode;
+
+                if(filler(buf, e.name().c_str(), &st, 0)){
+                    break;
+                }
+            }
+            return 0;
+        }
+        catch(...){
+            return EBADF;
+        }
     }
 }
