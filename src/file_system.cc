@@ -426,3 +426,34 @@ int File_System::utimens(const char *path, const struct timespec tv[2]){
         return -1;
     }
 }
+
+int File_System::chmod(const char *path, mode_t mode){
+    try{
+        Node current_node = _get_node(path);
+        Inode i = current_node.inode();
+
+        i.st_mode = mode;
+
+        current_node.update_inode(i);
+        return 0;
+    }
+    catch(E_BAD_PATH e){
+        return -1;
+    }
+}
+
+int File_System::chown(const char *path, uid_t uid, gid_t gid){
+    try{
+        Node current_node = _get_node(path);
+        Inode i = current_node.inode();
+
+        i.st_uid = uid ;
+        i.st_gid = gid ;
+
+        current_node.update_inode(i);
+        return 0;
+    }
+    catch(E_BAD_PATH e){
+        return -1;
+    }
+}

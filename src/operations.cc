@@ -60,16 +60,14 @@ int rtos_link(const char *path, const char *){
 
 }
 
-int rtos_chmod(const char *path, mode_t){
+int rtos_chmod(const char *path, mode_t mode){
     _debug_log() << "rtos_chmod " << path << std::endl;
-    return -1;
-
+    return fs->chmod(path, mode);
 }
 
-int rtos_chown(const char *path, uid_t, gid_t){
+int rtos_chown(const char *path, uid_t uid, gid_t gid){
     _debug_log() << "rtos_chown " << path << std::endl;
-    return -1;
-
+    return fs->chown(path, uid, gid);
 }
 
 int rtos_truncate(const char *path, off_t){
