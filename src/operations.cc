@@ -196,10 +196,9 @@ int rtos_access(const char *path, int){
 
 }
 
-int rtos_create(const char *path, mode_t, struct fuse_file_info *){
-    _debug_log() << "rtos_create " << path << std::endl;
-    return -1;
-
+int rtos_create(const char *path, mode_t mode, struct fuse_file_info *fi){
+    _debug_log() << "rtos_create " << path << " mode " << mode << std::endl;
+    return fs->create(path, mode, fi);
 }
 
 int rtos_ftruncate(const char *path, off_t, struct fuse_file_info *){

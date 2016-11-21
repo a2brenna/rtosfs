@@ -133,10 +133,9 @@ File_System::File_System(const std::string &prefix, const std::shared_ptr<Object
 
 }
 
-Node File_System::_get_node(const char *path){
+Node File_System::_get_node(const std::deque<std::string> &decomp_path){
     Node current_node = _root;
 
-    const std::deque<std::string> decomp_path = decompose_path(path);
     for(const auto &entry_name: decomp_path){
         const auto current_inode = current_node.inode();
         //lookup next path element in current_inode directory and then set current_inode = next
@@ -168,6 +167,10 @@ Node File_System::_get_node(const char *path){
     }
 
     return current_node;
+}
+
+Node File_System::_get_node(const char *path){
+    return _get_node(decompose_path(path));
 }
 
 Inode File_System::_get_inode(const char *path){
@@ -295,5 +298,97 @@ int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
         catch(...){
             return EBADF;
         }
+    }
+}
+
+int File_System::create(const char *path, mode_t mode, struct fuse_file_info *fi){
+
+    const timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
+
+    //create new empty file ref
+    const Ref new_file_ref = Ref();
+    {
+        const Object empty_file = Object("");
+        _backend->store(new_file_ref, empty_file);
+    }
+
+    //create new empty xattr ref
+    const Ref new_xattr_ref = Ref();
+    {
+        rtosfs::Dictionary xattrs;
+        std::string serialized_xattrs;
+        xattrs.SerializeToString(&serialized_xattrs);
+        const Object empty_xattr = Object(serialized_xattrs);
+        _backend->store(new_xattr_ref, empty_xattr);
+    }
+
+    //create new empty file inode
+    Inode new_file_inode;
+    {
+        new_file_inode.st_mode = mode;
+
+        //TODO: set this by looking at mode
+        new_file_inode.type = NODE_FILE;
+
+        std::memcpy(new_file_inode.data_ref, new_file_ref.buf(), 32);
+        std::memcpy(new_file_inode.xattr_ref, new_xattr_ref.buf(), 32);
+        new_file_inode.st_size = 0; //we know file is empty
+
+        //TODO: figure out if this should actually be zeroed out...
+        new_file_inode.st_atim = current_time;
+        new_file_inode.st_mtim = current_time;
+        new_file_inode.st_ctim = current_time;
+
+        //TODO: figure out how the hell to set these
+        new_file_inode.st_uid = 0;
+        new_file_inode.st_gid = 0;
+    }
+
+    const Ref new_file_inode_ref = Ref();
+    {
+        Node new_file_node(new_file_inode_ref, _backend);
+        new_file_node.update_inode(new_file_inode);
+    }
+
+    //Get Node for directory...
+    auto decomposed_path = decompose_path(path);
+    if(decomposed_path.size() == 0){
+        return -(EEXIST);
+    }
+    else{
+        const std::string name = decomposed_path.back();
+        decomposed_path.pop_back();
+
+        //get existing directory
+        Node dir_node = _get_node(decomposed_path);
+        Inode dir_inode = dir_node.inode();
+        std::string serialized_dir = _backend->fetch(Ref(dir_inode.data_ref, 32)).data();
+        rtosfs::Directory dir;
+        dir.ParseFromString(serialized_dir);
+
+        //check to see if object already exists
+        for(const auto &e: dir.entries()){
+            if(e.name() == name){
+                return -(EEXIST);
+            }
+        }
+
+        //Create directory object with new file entry
+        auto new_entry = dir.add_entries();
+        new_entry->set_name(name);
+        new_entry->set_inode_ref(std::string(new_file_inode_ref.buf(), 32));
+        dir.SerializeToString(&serialized_dir);
+
+        //Store new instance of directory object
+        const Ref new_dir_ref = Ref();
+        const Object new_dir = Object(serialized_dir);
+        _backend->store(new_dir_ref, new_dir);
+
+        //Update directory inode and append to inode stack
+        std::memcpy(dir_inode.data_ref, new_dir_ref.buf(), 32);
+        dir_inode.st_atim = current_time;
+        dir_inode.st_mtim = current_time;
+        dir_node.update_inode(dir_inode);
+        return 0;
     }
 }

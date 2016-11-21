@@ -2,6 +2,8 @@
 #define __FILE_SYSTEM_H__
 
 #include <memory>
+#include <deque>
+#include <string>
 #include <rtos/object_store.h>
 #include <rtos/ref_log.h>
 #include <time.h>
@@ -67,12 +69,14 @@ class File_System {
         int getattr(const char *path, struct stat *stbuf);
         int getxattr(const char *path, const char *name, char *value, size_t size);
         int readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
+        int create(const char *path, mode_t mode, struct fuse_file_info *fi);
 
     private:
         Node _root;
         std::shared_ptr<Object_Store> _backend;
 
         Node _get_node(const char *path);
+        Node _get_node(const std::deque<std::string> &decomp_path);
         Inode _get_inode(const char *path);
 
         //TODO:
