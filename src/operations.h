@@ -30,7 +30,7 @@ int rtos_write(const char *, const char *, size_t, off_t,
             struct fuse_file_info *);
 int rtos_statfs(const char *, struct statvfs *);
 int rtos_flush(const char *, struct fuse_file_info *);
-int rtos_release(const char *, struct fuse_file_info *);
+//int rtos_release(const char *, struct fuse_file_info *);
 int rtos_fsync(const char *, int, struct fuse_file_info *);
 int rtos_setxattr(const char *, const char *, const char *, size_t, int);
 int rtos_getxattr(const char *, const char *, char *, size_t);
@@ -83,7 +83,7 @@ static struct fuse_operations rtos_ops {
 	.write = rtos_write,
 	.statfs = rtos_statfs,
 	.flush = rtos_flush,
-	.release = rtos_release,
+	.release = NULL,
 	.fsync = rtos_fsync,
 	.setxattr = rtos_setxattr,
 	.getxattr = rtos_getxattr,

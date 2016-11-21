@@ -116,11 +116,13 @@ int rtos_flush(const char *path, struct fuse_file_info *){
 
 }
 
+/*
 int rtos_release(const char *path, struct fuse_file_info *){
     _debug_log() << "rtos_release " << path << std::endl;
     return -1;
 
 }
+*/
 
 int rtos_fsync(const char *path, int, struct fuse_file_info *){
     _debug_log() << "rtos_fsync " << path << std::endl;
