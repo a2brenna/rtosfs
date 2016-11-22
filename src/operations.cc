@@ -70,10 +70,9 @@ int rtos_chown(const char *path, uid_t uid, gid_t gid){
     return fs->chown(path, uid, gid);
 }
 
-int rtos_truncate(const char *path, off_t){
+int rtos_truncate(const char *path, off_t off){
     _debug_log() << "rtos_truncate " << path << std::endl;
-    return -1;
-
+    return fs->truncate(path, off);
 }
 
 int rtos_utime(const char *path, struct utimbuf *){

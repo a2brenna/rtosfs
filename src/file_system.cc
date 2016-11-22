@@ -586,3 +586,29 @@ int File_System::removexattr(const char *path, const char *name){
         return -1;
     }
 }
+
+int File_System::truncate(const char *path, off_t off){
+    try{
+        Node node = _get_node(path);
+        Inode inode = node.inode();
+
+        if(off != inode.st_size){
+            //Replace with Object Store mutation tech?
+            std::string file = _backend->fetch(Ref(inode.data_ref, 32), 0, inode.st_size).data();
+            file.resize(off);
+
+            Ref new_data_ref = Ref();
+            _backend->store(new_data_ref, Object(file));
+            std::memcpy(&(inode.data_ref), new_data_ref.buf(), 32);
+
+            inode.st_size = off;
+            node.update_inode(inode);
+        }
+        else{
+            return 0;
+        }
+    }
+    catch(E_BAD_PATH e){
+        return -1;
+    }
+}
