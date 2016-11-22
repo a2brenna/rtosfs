@@ -80,8 +80,8 @@ class File_System {
         int setxattr(const char *path, const char *name, const char *value, size_t size, int flags);
         int removexattr(const char *path, const char *name);
         int truncate(const char *path, off_t off);
-
-
+        int write(const char *path, const char *buf, size_t size, off_t off,
+                            struct fuse_file_info *fi);
 
     private:
         Node _root;

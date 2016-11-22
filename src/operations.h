@@ -55,8 +55,8 @@ int rtos_ioctl(const char *, int cmd, void *arg,
             struct fuse_file_info *, unsigned int flags, void *data);
 int rtos_poll(const char *, struct fuse_file_info *,
             struct fuse_pollhandle *ph, unsigned *reventsp);
-int rtos_write_buf(const char *, struct fuse_bufvec *buf, off_t off,
-            struct fuse_file_info *);
+//int rtos_write_buf(const char *, struct fuse_bufvec *buf, off_t off,
+//            struct fuse_file_info *);
 int rtos_read_buf(const char *, struct fuse_bufvec **bufp,
             size_t size, off_t off, struct fuse_file_info *);
 int rtos_flock(const char *, struct fuse_file_info *, int op);
@@ -108,7 +108,7 @@ static struct fuse_operations rtos_ops {
     .flag_reserved = 29,
 	.ioctl = rtos_ioctl,
 	.poll = rtos_poll,
-	.write_buf = rtos_write_buf,
+	.write_buf = NULL,
 	.read_buf = NULL,
 	.flock = rtos_flock,
 	.fallocate = rtos_fallocate,

@@ -92,11 +92,10 @@ int rtos_read(const char *path, char *buf, size_t size, off_t off,
     return fs->read(path, buf, size, off, fi);
 }
 
-int rtos_write(const char *path, const char *, size_t, off_t,
-            struct fuse_file_info *){
+int rtos_write(const char *path, const char *buf, size_t size, off_t off,
+            struct fuse_file_info *fi){
     _debug_log() << "rtos_write " << path << std::endl;
-    return -1;
-
+    return fs->write(path,  buf, size, off, fi);
 }
 
 int rtos_statfs(const char *path, struct statvfs *){
@@ -234,14 +233,14 @@ int rtos_poll(const char *path, struct fuse_file_info *,
     _debug_log() << "rtos_poll " << path << std::endl;
     return -1;
 }
-
+/*
 int rtos_write_buf(const char *path, struct fuse_bufvec *buf, off_t off,
             struct fuse_file_info *){
     _debug_log() << "rtos_write_buf " << path << std::endl;
     return -1;
 
 }
-
+*/
 int rtos_read_buf(const char *path, struct fuse_bufvec **bufp,
             size_t size, off_t off, struct fuse_file_info *){
 

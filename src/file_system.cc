@@ -470,7 +470,6 @@ int File_System::open(const char *path, struct fuse_file_info *fi){
 }
 
 int File_System::read(const char *path, char *buf, size_t size, off_t off, struct fuse_file_info *fi){
-    _debug_log() << "Read: " << path << std::endl;
     try{
         const Inode i = _get_inode(path);
         const size_t actual_size = i.st_size;
@@ -606,6 +605,40 @@ int File_System::truncate(const char *path, off_t off){
         }
         else{
             return 0;
+        }
+    }
+    catch(E_BAD_PATH e){
+        return -1;
+    }
+}
+
+int File_System::write(const char *path, const char *buf, size_t size, off_t off,
+                    struct fuse_file_info *fi){
+    try{
+        Node node = _get_node(path);
+        Inode inode = node.inode();
+
+        if(off == inode.st_size){
+            //A straight append
+            _backend->append(Ref(inode.data_ref, 32), buf, size);
+            inode.st_size = inode.st_size + size;
+            node.update_inode(inode);
+            return size;
+        }
+        else{
+            //Rewriting a portion of the file or punching a hole
+            std::string current_file = _backend->fetch(Ref(inode.data_ref, 32)).data();
+            current_file.resize(off);
+            current_file.append(buf, size);
+
+            Ref new_data_ref = Ref();
+            _backend->store(new_data_ref, Object(current_file));
+
+            inode.st_size = current_file.size();
+            std::memcpy(&(inode.data_ref), new_data_ref.buf(), 32);
+
+            node.update_inode(inode);
+            return size;
         }
     }
     catch(E_BAD_PATH e){
