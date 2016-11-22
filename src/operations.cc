@@ -125,10 +125,9 @@ int rtos_fsync(const char *path, int, struct fuse_file_info *){
 
 }
 
-int rtos_setxattr(const char *path, const char *, const char *, size_t, int){
+int rtos_setxattr(const char *path, const char *name, const char *value, size_t size, int flags){
     _debug_log() << "rtos_setxattr " << path << std::endl;
-    return -1;
-
+    return fs->setxattr(path, name, value, size, flags);
 }
 
 int rtos_getxattr(const char *path, const char *name, char *value, size_t size){

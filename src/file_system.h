@@ -77,6 +77,7 @@ class File_System {
         int open(const char *path, struct fuse_file_info *fi);
         int read(const char *path, char *buf, size_t size, off_t off,
                             struct fuse_file_info *fi);
+        int setxattr(const char *path, const char *name, const char *value, size_t size, int flags);
 
 
 

@@ -499,3 +499,42 @@ int File_System::read(const char *path, char *buf, size_t size, off_t off, struc
         return -(EBADF);
     }
 }
+
+int File_System::setxattr(const char *path, const char *name, const char *value, size_t size, int flags){
+    try{
+        Node node = _get_node(path);
+        Inode inode = node.inode();
+
+        std::string serialized_xattrs = _backend->fetch(Ref(inode.xattr_ref, 32)).data();
+        rtosfs::Dictionary xattrs;
+        xattrs.ParseFromString(serialized_xattrs);
+
+        {
+            bool set = false;
+            for(auto &entry: (*xattrs.mutable_entries())){
+                if(std::strncmp(name, entry.name().c_str(), entry.name().size())){
+                    entry.set_value(std::string(value, size));
+                    set = true;
+                }
+            }
+
+            if(!set){
+                auto new_entry = xattrs.add_entries();
+                new_entry->set_name(name);
+                new_entry->set_value(std::string(value, size));
+            }
+        }
+
+        xattrs.SerializeToString(&serialized_xattrs);
+        const Ref new_xattr_ref = Ref();
+        _backend->store(new_xattr_ref, Object(serialized_xattrs));
+
+        std::memcpy(&(inode.xattr_ref), new_xattr_ref.buf(), 32);
+        node.update_inode(inode);
+
+        return 0;
+    }
+    catch(E_BAD_PATH e){
+        return -1;
+    }
+}
