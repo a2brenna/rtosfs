@@ -473,20 +473,26 @@ int File_System::read(const char *path, char *buf, size_t size, off_t off, struc
     _debug_log() << "Read: " << path << std::endl;
     try{
         const Inode i = _get_inode(path);
+        const size_t actual_size = i.st_size;
+
         if(i.type == NODE_DIR){
             return -(EISDIR);
         }
         else if(i.type == NODE_SYM){
             return -(EBADF);
         }
-        else{
+        else if(off < i.st_size){
+            const auto fetch_size = std::max((size_t)(i.st_size - off), size);
             const Ref data_ref = Ref(i.data_ref, 32);
 
-            const std::string file = _backend->fetch(data_ref, off, size).data();
+            const std::string file = _backend->fetch(data_ref, off, fetch_size).data();
             assert(file.size() <= size);
             std::memcpy(buf, file.c_str(), file.size());
 
             return file.size();
+        }
+        else{
+            return 0;
         }
     }
     catch(E_BAD_PATH e){
