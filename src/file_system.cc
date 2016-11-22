@@ -538,3 +538,45 @@ int File_System::setxattr(const char *path, const char *name, const char *value,
         return -1;
     }
 }
+
+int File_System::removexattr(const char *path, const char *name){
+    try{
+        Node node = _get_node(path);
+        Inode inode = node.inode();
+
+        std::string serialized_xattrs = _backend->fetch(Ref(inode.xattr_ref, 32)).data();
+        rtosfs::Dictionary old_xattrs;
+        old_xattrs.ParseFromString(serialized_xattrs);
+
+
+        //Loop over the xattrs, copy the ones we aren't removing to a new xattrs dict
+        rtosfs::Dictionary new_attrs;
+        bool dirty = false;
+        for(const auto &entry: old_xattrs.entries()){
+            if(std::strncmp(name, entry.name().c_str(), entry.name().size())){
+                dirty = true;
+            }
+            else{
+                auto new_entry = new_attrs.add_entries();
+                new_entry->set_name(entry.name());
+                new_entry->set_value(entry.value());
+            }
+        }
+
+        //If we actually changed the xattrs (by not copying the one we're removing)
+        //then write them back out to "disk"
+        if(dirty){
+            new_attrs.SerializeToString(&serialized_xattrs);
+            const Ref new_xattr_ref = Ref();
+            _backend->store(new_xattr_ref, Object(serialized_xattrs));
+
+            std::memcpy(&(inode.xattr_ref), new_xattr_ref.buf(), 32);
+            node.update_inode(inode);
+        }
+
+        return 0;
+    }
+    catch(E_BAD_PATH e){
+        return -1;
+    }
+}

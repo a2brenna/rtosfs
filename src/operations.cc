@@ -143,10 +143,9 @@ int rtos_listxattr(const char *path, char *, size_t){
 
 }
 
-int rtos_removexattr(const char *path, const char *){
-    _debug_log() << "rtos_removexattr " << path << std::endl;
-    return -1;
-
+int rtos_removexattr(const char *path, const char *name){
+    _debug_log() << "rtos_removexattr " << path << " " << name << std::endl;
+    return fs->removexattr(path, name);
 }
 
 /*
