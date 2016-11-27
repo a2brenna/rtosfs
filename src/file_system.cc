@@ -183,12 +183,16 @@ int File_System::getattr(const char *path, struct stat *stbuf){
 
         const Inode inode = _get_inode(path);
 
-        _debug_log() << inode << std::endl;
+        /* st_dev, st_blksize are ignored
+         * st_ino is ignored, as we do not support use_ino mount option
+        stbuf->st_dev = 0;
+        stbuf->blksize = 0;
+        stbuf->st_ino = 0;
+        stbuf->st_rdev = 0;
+        */
 
-        //See linux kernel Documents/devices.txt: Major dev id 60 - 63 reserved for
-        //Local/Experimental char devices
-        //TODO: Use a nonce for the minor device id
-        stbuf->st_dev = makedev(60, 1);
+        //Note: I don't think st_blocks is meaningful without a block size
+        //stbuf->st_blocks = 0;
 
         stbuf->st_mode = inode.st_mode;
         stbuf->st_nlink = inode.st_nlink;
@@ -197,18 +201,10 @@ int File_System::getattr(const char *path, struct stat *stbuf){
 
         //Currently read and write a character at a time
         stbuf->st_size = inode.st_size;
-        stbuf->st_blksize = 1;
-        stbuf->st_blocks = 1;
 
         stbuf->st_atim = inode.st_atim;
         stbuf->st_mtim = inode.st_mtim;
         stbuf->st_ctim = inode.st_ctim;
-
-        /*
-        * UNSUPPORTED
-        */
-        stbuf->st_ino = 1;
-        stbuf->st_rdev = makedev(60,1);
 
         return 0;
     }

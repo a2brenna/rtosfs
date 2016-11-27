@@ -9,7 +9,12 @@ extern std::unique_ptr<File_System> fs;
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 
-int rtos_getattr(const char *, struct stat *);
+/*Can return:
+ * 0: On success
+ *  -ENOENT: path doesn't exist
+ */
+int rtos_getattr(const char *path, struct stat *);
+
 int rtos_readlink(const char *, char *, size_t);
 int rtos_getdir(const char *, fuse_dirh_t, fuse_dirfil_t);
 int rtos_mknod(const char *, mode_t, dev_t);
