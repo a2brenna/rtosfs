@@ -122,8 +122,10 @@ static struct fuse_operations rtos_ops {
 	.utimens  = rtos_utimens,
 	.bmap = rtos_bmap,
     .flag_nullpath_ok = 0,
+    //TODO: re-enable this
     .flag_nopath = 0,
-    .flag_utime_omit_ok = 1,
+    //TODO: re-enable this
+    .flag_utime_omit_ok = 0,
     .flag_reserved = 29,
 	.ioctl = rtos_ioctl,
 	.poll = rtos_poll,
