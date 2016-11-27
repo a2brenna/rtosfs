@@ -26,7 +26,6 @@ int rtos_getdir(const char *path, fuse_dirh_t, fuse_dirfil_t){
 int rtos_mknod(const char *path, mode_t, dev_t){
     _debug_log() << "rtos_mknod " << path << std::endl;
     return -1;
-
 }
 
 int rtos_mkdir(const char *path, mode_t){

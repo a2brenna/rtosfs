@@ -260,6 +260,9 @@ int File_System::getxattr(const char *path, const char *name, char *value, size_
     catch(E_NOT_DIR e){
         return -ENOTDIR;
     }
+    catch(E_OBJECT_DNE e){
+        return -ENODATA;
+    }
 }
 
 int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
