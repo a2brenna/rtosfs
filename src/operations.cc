@@ -57,7 +57,6 @@ int rtos_rename(const char *path, const char *){
 int rtos_link(const char *path, const char *){
     _debug_log() << "rtos_link " << path << std::endl;
     return -1;
-
 }
 
 int rtos_chmod(const char *path, mode_t mode){
@@ -78,7 +77,6 @@ int rtos_truncate(const char *path, off_t off){
 int rtos_utime(const char *path, struct utimbuf *){
     _debug_log() << "rtos_utime " << path << std::endl;
     return -1;
-
 }
 
 int rtos_open(const char *path, struct fuse_file_info *fi){

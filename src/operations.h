@@ -29,6 +29,12 @@ int rtos_chmod(const char *, mode_t);
 int rtos_chown(const char *, uid_t, gid_t);
 int rtos_truncate(const char *, off_t);
 int rtos_utime(const char *, struct utimbuf *);
+
+/*Can return:
+ * 0: On success
+ *  -ENOENT: file/link/dir does not exist
+ *  -ENOTDIR: a non-leaf component of the path is not a directory
+ */
 int rtos_open(const char *, struct fuse_file_info *);
 int rtos_read(const char *, char *, size_t, off_t,
             struct fuse_file_info *);

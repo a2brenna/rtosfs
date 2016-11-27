@@ -468,7 +468,10 @@ int File_System::open(const char *path, struct fuse_file_info *fi){
         return 0;
     }
     catch(E_DNE e){
-        return -(ENOENT);
+        return -ENOENT;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
     }
 }
 
