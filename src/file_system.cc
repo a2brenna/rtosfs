@@ -2,7 +2,10 @@
 
 #include "debug.h"
 #include "disk_format.pb.h"
+
 #include <cassert>
+#include <sys/types.h>
+#include <sys/xattr.h>
 
 #include <boost/algorithm/string.hpp>
 #include <deque>
@@ -214,11 +217,9 @@ int File_System::getattr(const char *path, struct stat *stbuf){
 
 }
 
-int File_System::getxattr(const char *path, const char *name, char *value, size_t size){
-    //TODO:
-    //check preconditions on name size and value size
+int File_System::getxattr(const char *path, const char *name, char *value, size_t val_size){
     try{
-        std::memset(value, '\0', size);
+        std::memset(value, '\0', val_size);
 
         const Inode inode = _get_inode(path);
 
@@ -233,16 +234,16 @@ int File_System::getxattr(const char *path, const char *name, char *value, size_
             if(std::strncmp(name, entry.name().c_str(), entry.name().size())){
                 //Manpage for getxattr states that if the size is 0 return the
                 //current size of the attribute in question
-                if(size == 0){
+                if(val_size == 0){
                     return entry.value().size();
                 }
                 else{
-                    if(entry.value().size() >= size){
-                        std::strncpy(value, entry.value().c_str(), size);
+                    if(entry.value().size() >= val_size){
+                        std::strncpy(value, entry.value().c_str(), entry.value().size());
                         return entry.value().size();
                     }
                     else{
-                        return ERANGE;
+                        return -ERANGE;
                     }
                 }
             }
@@ -251,10 +252,13 @@ int File_System::getxattr(const char *path, const char *name, char *value, size_
             }
         }
 
-        return ENODATA;
+        return -ENODATA;
     }
-    catch(...){
-        return ENODATA;
+    catch(E_DNE e){
+        return -ENOENT;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
     }
 }
 

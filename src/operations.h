@@ -11,7 +11,8 @@ extern std::unique_ptr<File_System> fs;
 
 /*Can return:
  * 0: On success
- *  -ENOENT: path doesn't exist
+ *  -ENOENT: file/link/dir does not exist
+ *  -ENOTDIR: a non-leaf component of the path is not a directory
  */
 int rtos_getattr(const char *path, struct stat *);
 
@@ -38,7 +39,14 @@ int rtos_flush(const char *, struct fuse_file_info *);
 //int rtos_release(const char *, struct fuse_file_info *);
 int rtos_fsync(const char *, int, struct fuse_file_info *);
 int rtos_setxattr(const char *, const char *, const char *, size_t, int);
-int rtos_getxattr(const char *, const char *, char *, size_t);
+
+/*Can return:
+ * 0: On success
+ *  -ENOENT: file/link/dir does not exist
+ *  -ENOTDIR: a non-leaf component of the path is not a directory
+ *  -ERANGE: value size (as given by val_size) is not large enough to hold the xattr
+ */
+int rtos_getxattr(const char *path, const char *name, char *value, size_t val_size);
 int rtos_listxattr(const char *, char *, size_t);
 int rtos_removexattr(const char *, const char *);
 //int rtos_opendir(const char *, struct fuse_file_info *);
