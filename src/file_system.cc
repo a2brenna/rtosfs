@@ -427,7 +427,10 @@ int File_System::utimens(const char *path, const struct timespec tv[2]){
         return 0;
     }
     catch(E_DNE e){
-        return -1;
+        return -ENOENT;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
     }
 }
 
