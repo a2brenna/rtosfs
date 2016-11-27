@@ -140,7 +140,7 @@ Node File_System::_get_node(const std::deque<std::string> &decomp_path){
         const auto current_inode = current_node.inode();
         //lookup next path element in current_inode directory and then set current_inode = next
         if(current_inode.type != NODE_DIR){
-            throw E_BAD_PATH();
+            throw E_NOT_DIR();
         }
         else{
             //get directory corresponding to current_inode
@@ -161,7 +161,7 @@ Node File_System::_get_node(const std::deque<std::string> &decomp_path){
             }
 
             if(bad_path){
-                throw E_BAD_PATH();
+                throw E_DNE();
             }
         }
     }
@@ -208,7 +208,7 @@ int File_System::getattr(const char *path, struct stat *stbuf){
 
         return 0;
     }
-    catch(E_BAD_PATH e){
+    catch(E_DNE e){
         return -(ENOENT);
     }
 
@@ -419,7 +419,7 @@ int File_System::utimens(const char *path, const struct timespec tv[2]){
         current_node.update_inode(i);
         return 0;
     }
-    catch(E_BAD_PATH e){
+    catch(E_DNE e){
         return -1;
     }
 }
@@ -434,8 +434,11 @@ int File_System::chmod(const char *path, mode_t mode){
         current_node.update_inode(i);
         return 0;
     }
-    catch(E_BAD_PATH e){
-        return -1;
+    catch(E_DNE e){
+        return -ENOENT;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
     }
 }
 
@@ -450,7 +453,7 @@ int File_System::chown(const char *path, uid_t uid, gid_t gid){
         current_node.update_inode(i);
         return 0;
     }
-    catch(E_BAD_PATH e){
+    catch(E_DNE e){
         return -1;
     }
 }
@@ -460,7 +463,7 @@ int File_System::open(const char *path, struct fuse_file_info *fi){
         const Inode i = _get_inode(path);
         return 0;
     }
-    catch(E_BAD_PATH e){
+    catch(E_DNE e){
         return -(ENOENT);
     }
 }
@@ -490,7 +493,7 @@ int File_System::read(const char *path, char *buf, size_t size, off_t off, struc
             return 0;
         }
     }
-    catch(E_BAD_PATH e){
+    catch(E_DNE e){
         return -(EBADF);
     }
     catch(E_DATA_DNE){
@@ -535,7 +538,7 @@ int File_System::setxattr(const char *path, const char *name, const char *value,
 
         return 0;
     }
-    catch(E_BAD_PATH e){
+    catch(E_DNE e){
         return -1;
     }
 }
@@ -577,7 +580,7 @@ int File_System::removexattr(const char *path, const char *name){
 
         return 0;
     }
-    catch(E_BAD_PATH e){
+    catch(E_DNE e){
         return -1;
     }
 }
@@ -603,7 +606,7 @@ int File_System::truncate(const char *path, off_t off){
             return 0;
         }
     }
-    catch(E_BAD_PATH e){
+    catch(E_DNE e){
         return -1;
     }
 }
@@ -637,7 +640,7 @@ int File_System::write(const char *path, const char *buf, size_t size, off_t off
             return size;
         }
     }
-    catch(E_BAD_PATH e){
+    catch(E_DNE e){
         return -1;
     }
 }

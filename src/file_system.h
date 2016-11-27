@@ -19,7 +19,7 @@ class E_NOT_FILE {};
 
 class E_BAD_DIR {};
 class E_BAD_SYM {};
-class E_BAD_PATH {};
+class E_DNE {};
 
 enum NODE_TYPE{
     NODE_DIR,
