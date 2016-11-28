@@ -493,14 +493,19 @@ int File_System::read(const char *path, char *buf, size_t size, off_t off, struc
             return -EBADF;
         }
         else if(off < i.st_size){
-            const auto fetch_size = std::max((size_t)(i.st_size - off), size);
+            //const auto fetch_size = std::max((size_t)(i.st_size - off), size);
             const Ref data_ref = Ref(i.data_ref, 32);
 
-            const std::string file = _backend->fetch(data_ref, off, fetch_size).data();
-            assert(file.size() <= size);
-            std::memcpy(buf, file.c_str(), file.size());
-
-            return file.size();
+            //TODO: fix this to do partial fetch when this is supported
+            const std::string file = _backend->fetch(data_ref).data();
+            if(file.size() <= off){
+                return 0;
+            }
+            else{
+                const size_t bytes_to_copy = std::min(size, file.size() - off);
+                std::memcpy(buf, &(file[off]), bytes_to_copy);
+                return bytes_to_copy;
+            }
         }
         else{
             return 0;
