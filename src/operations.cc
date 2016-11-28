@@ -85,8 +85,9 @@ int rtos_open(const char *path, struct fuse_file_info *fi){
 
 int rtos_read(const char *path, char *buf, size_t size, off_t off,
             struct fuse_file_info *fi){
-    _debug_log() << "rtos_read " << path << std::endl;
-    return fs->read(path, buf, size, off, fi);
+    const auto r = fs->read(path, buf, size, off, fi);
+    _debug_log() << "rtos_read " << path << " size: " << size << " off: " << off << " return: " << r << std::endl;
+    return r;
 }
 
 int rtos_write(const char *path, const char *buf, size_t size, off_t off,

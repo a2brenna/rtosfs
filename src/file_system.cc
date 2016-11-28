@@ -487,10 +487,10 @@ int File_System::read(const char *path, char *buf, size_t size, off_t off, struc
         const size_t actual_size = i.st_size;
 
         if(i.type == NODE_DIR){
-            return -(EISDIR);
+            return -EISDIR;
         }
         else if(i.type == NODE_SYM){
-            return -(EBADF);
+            return -EBADF;
         }
         else if(off < i.st_size){
             const auto fetch_size = std::max((size_t)(i.st_size - off), size);
@@ -507,13 +507,15 @@ int File_System::read(const char *path, char *buf, size_t size, off_t off, struc
         }
     }
     catch(E_DNE e){
-        return -(EBADF);
+        return -EBADF;
     }
+    /*
     catch(E_DATA_DNE){
         return 0;
     }
+    */
     catch(E_OBJECT_DNE e){
-        return -(EBADF);
+        return -EBADF;
     }
 }
 
