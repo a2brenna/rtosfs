@@ -611,7 +611,7 @@ int File_System::truncate(const char *path, off_t off){
         Inode inode = node.inode();
 
         if(off != inode.st_size){
-            //Replace with Object Store mutation tech?
+            //TODO:Replace with Object Store mutation tech?
             std::string file = _backend->fetch(Ref(inode.data_ref, 32), 0, inode.st_size).data();
             file.resize(off);
 
@@ -622,12 +622,13 @@ int File_System::truncate(const char *path, off_t off){
             inode.st_size = off;
             node.update_inode(inode);
         }
-        else{
-            return 0;
-        }
+        return 0;
     }
     catch(E_DNE e){
-        return -1;
+        return -ENOENT;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
     }
 }
 
