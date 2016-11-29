@@ -148,7 +148,7 @@ Node File_System::_get_node(const std::deque<std::string> &decomp_path){
         else{
             //get directory corresponding to current_inode
             const Ref serialized_dir_ref(current_inode.data_ref, 32);
-            const std::string serialized_dir = _backend->fetch(serialized_dir_ref).data();
+            const std::string serialized_dir = _backend->fetch(serialized_dir_ref, 0, current_inode.st_size).data();
             rtosfs::Directory dir;
             dir.ParseFromString(serialized_dir);
 
@@ -281,7 +281,7 @@ int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
     }
     else{
         try{
-            const std::string serialized_dir = _backend->fetch(Ref(inode.data_ref, 32)).data();
+            const std::string serialized_dir = _backend->fetch(Ref(inode.data_ref, 32), 0, inode.st_size).data();
             rtosfs::Directory dir;
             dir.ParseFromString(serialized_dir);
 
@@ -366,7 +366,7 @@ int File_System::create(const char *path, mode_t mode, struct fuse_file_info *fi
         //get existing directory
         Node dir_node = _get_node(decomposed_path);
         Inode dir_inode = dir_node.inode();
-        std::string serialized_dir = _backend->fetch(Ref(dir_inode.data_ref, 32)).data();
+        std::string serialized_dir = _backend->fetch(Ref(dir_inode.data_ref, 32), 0, dir_inode.st_size).data();
         rtosfs::Directory dir;
         dir.ParseFromString(serialized_dir);
 
@@ -484,7 +484,6 @@ int File_System::open(const char *path, struct fuse_file_info *fi){
 int File_System::read(const char *path, char *buf, size_t size, off_t off, struct fuse_file_info *fi){
     try{
         const Inode i = _get_inode(path);
-        const size_t actual_size = i.st_size;
 
         if(i.type == NODE_DIR){
             return -EISDIR;
@@ -497,7 +496,7 @@ int File_System::read(const char *path, char *buf, size_t size, off_t off, struc
             const Ref data_ref = Ref(i.data_ref, 32);
 
             //TODO: fix this to do partial fetch when this is supported
-            const std::string file = _backend->fetch(data_ref).data();
+            const std::string file = _backend->fetch(data_ref, 0, i.st_size).data();
             if(file.size() <= off){
                 return 0;
             }
@@ -647,9 +646,9 @@ int File_System::write(const char *path, const char *buf, size_t size, off_t off
         }
         else{
             //Rewriting a portion of the file or punching a hole
-            std::string current_file = _backend->fetch(Ref(inode.data_ref, 32)).data();
-            current_file.resize(off);
-            current_file.append(buf, size);
+            std::string current_file = _backend->fetch(Ref(inode.data_ref, 32), 0, inode.st_size).data();
+            current_file.resize(std::max((off_t)(off + size), inode.st_size));
+            std::memcpy(&current_file[off], buf, size);
 
             Ref new_data_ref = Ref();
             _backend->store(new_data_ref, Object(current_file));
