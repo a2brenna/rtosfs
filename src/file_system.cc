@@ -270,12 +270,10 @@ rtosfs::Directory File_System::_get_dir(const std::deque<std::string> &decomp_pa
     if(inode.type != NODE_DIR){
         throw E_NOT_DIR();
     }
-    else{
-        const std::string serialized_dir = _backend->fetch(Ref(inode.data_ref, 32)).data();
-        rtosfs::Directory dir;
-        dir.ParseFromString(serialized_dir);
-        return dir;
-    }
+    const std::string serialized_dir = _backend->fetch(Ref(inode.data_ref, 32)).data();
+    rtosfs::Directory dir;
+    dir.ParseFromString(serialized_dir);
+    return dir;
 }
 
 rtosfs::Directory File_System::_get_dir(const char *path){
@@ -288,7 +286,8 @@ int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
 
     try{
         const std::string dir_path(path);
-        for(const auto &e: _get_dir(path).entries()){
+        const rtosfs::Directory dir = _get_dir(path);
+        for(const auto &e: dir.entries()){
             const std::string entry_path = dir_path + "/" + e.name();
             const auto entry_inode = _get_inode(entry_path.c_str());
 
