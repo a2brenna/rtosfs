@@ -662,6 +662,6 @@ int File_System::write(const char *path, const char *buf, size_t size, off_t off
         }
     }
     catch(E_DNE e){
-        return -1;
+        return -EIO;
     }
 }
