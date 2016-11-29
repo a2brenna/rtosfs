@@ -269,18 +269,14 @@ int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
     (void) offset;
     (void) fi;
 
-    //TODO: THIS IS BROKEN, for some reason path is not set when this function call is made... I assume its trying to use the fuse_file_info *...
-
-    _debug_log() << "Readdir: " << "/" << std::endl;
-
-    const std::string dir_path("/");
-
-    const Inode inode = _get_inode("/");
-    if(inode.type != NODE_DIR){
-        return EBADF;
-    }
-    else{
-        try{
+    try
+    {
+        const std::string dir_path(path);
+        const Inode inode = _get_inode(path);
+        if(inode.type != NODE_DIR){
+            return -ENOTDIR;
+        }
+        else{
             const std::string serialized_dir = _backend->fetch(Ref(inode.data_ref, 32)).data();
             rtosfs::Directory dir;
             dir.ParseFromString(serialized_dir);
@@ -298,9 +294,9 @@ int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
             }
             return 0;
         }
-        catch(...){
-            return EBADF;
-        }
+    }
+    catch(E_DNE e){
+        return -ENOENT;
     }
 }
 
