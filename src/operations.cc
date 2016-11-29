@@ -14,7 +14,7 @@ int rtos_getattr(const char *path, struct stat *stbuf){
 }
 
 int rtos_readlink(const char *path, char *linkbuf, size_t size){
-    _debug_log() << "rtos_realink " << path << std::endl;
+    _debug_log() << "rtos_realink " << path << " " << linkbuf << " " << size << std::endl;
     return -1;
 }
 
@@ -171,10 +171,11 @@ int rtos_fsync_dir(const char *path, int, struct fuse_file_info *){
 
 void *rtos_init(struct fuse_conn_info *conn){
     _debug_log() << "rtos_init " << conn << std::endl;
+    return nullptr;
 }
 
 void rtos_destroy(void *){
-
+    return;
 }
 
 int rtos_access(const char *path, int mode){
@@ -210,24 +211,22 @@ int rtos_utimens(const char *path, const struct timespec tv[2]){
 }
 
 int rtos_bmap(const char *path, size_t blocksize, uint64_t *idx){
-    _debug_log() << "rtos_bmap " << path << std::endl;
+    _debug_log() << "rtos_bmap " << path << " " << blocksize << " " << idx << std::endl;
     return -1;
-
 }
 
 int rtos_ioctl(const char *path, int cmd, void *arg,
-            struct fuse_file_info *, unsigned int flags, void *data){
-    _debug_log() << "rtos_ioctl " << path << std::endl;
-    return -1;
-
-}
-
-int rtos_poll(const char *path, struct fuse_file_info *,
-            struct fuse_pollhandle *ph, unsigned *reventsp){
-
-    _debug_log() << "rtos_poll " << path << std::endl;
+            struct fuse_file_info *fi, unsigned int flags, void *data){
+    _debug_log() << "rtos_ioctl " << path << " " << cmd << " " << arg << " " << fi << " " << flags << " " << data << std::endl;
     return -1;
 }
+
+int rtos_poll(const char *path, struct fuse_file_info *fi,
+            struct fuse_pollhandle *ph, unsigned int *reventsp){
+    _debug_log() << "rtos_poll " << path << " " << fi << " " << ph << " " << reventsp << std::endl;
+    return -1;
+}
+
 /*
 int rtos_write_buf(const char *path, struct fuse_bufvec *buf, off_t off,
             struct fuse_file_info *){
@@ -237,14 +236,14 @@ int rtos_write_buf(const char *path, struct fuse_bufvec *buf, off_t off,
 }
 */
 int rtos_read_buf(const char *path, struct fuse_bufvec **bufp,
-            size_t size, off_t off, struct fuse_file_info *){
+            size_t size, off_t off, struct fuse_file_info *fi){
 
-    _debug_log() << "rtos_read_buf " << path << std::endl;
+    _debug_log() << "rtos_read_buf " << path << " " << bufp << " " << size << " " << off << " " << fi << std::endl;
     return -1;
 }
 
-int rtos_flock(const char *path, struct fuse_file_info *, int op){
-    _debug_log() << "rtos_flock " << path << std::endl;
+int rtos_flock(const char *path, struct fuse_file_info *fi, int op){
+    _debug_log() << "rtos_flock " << path << " " << fi << " " << op << std::endl;
     return -1;
 
 }

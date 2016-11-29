@@ -457,7 +457,7 @@ int File_System::chown(const char *path, uid_t uid, gid_t gid){
 
 int File_System::open(const char *path, struct fuse_file_info *fi){
     try{
-        const Inode i = _get_inode(path);
+        _get_inode(path);
         return 0;
     }
     catch(E_DNE e){
@@ -471,7 +471,6 @@ int File_System::open(const char *path, struct fuse_file_info *fi){
 int File_System::read(const char *path, char *buf, size_t size, off_t off, struct fuse_file_info *fi){
     try{
         const Inode i = _get_inode(path);
-        const size_t actual_size = i.st_size;
 
         if(i.type == NODE_DIR){
             return -EISDIR;
@@ -485,7 +484,7 @@ int File_System::read(const char *path, char *buf, size_t size, off_t off, struc
 
             //TODO: fix this to do partial fetch when this is supported
             const std::string file = _backend->fetch(data_ref).data();
-            if(file.size() <= off){
+            if( (off_t)file.size() <= off ){
                 return 0;
             }
             else{
@@ -659,6 +658,9 @@ int File_System::access(const char *path, int mode){
 
         if( (mode == F_OK) || has_access(inode, mode) ){
             return 0;
+        }
+        else{
+            return -EACCES;
         }
     }
     catch(E_NOT_DIR e){
