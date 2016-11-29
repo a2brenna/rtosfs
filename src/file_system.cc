@@ -11,26 +11,8 @@
 #include <deque>
 #include <string>
 
-bool can_read(const Inode &inode){
-    if (inode.st_mode & R_OK){
-        return true;
-    }
-    else{
-        throw E_PERM();
-    }
-}
-
-bool can_write(const Inode &inode){
-    if (inode.st_mode & W_OK){
-        return true;
-    }
-    else{
-        throw E_PERM();
-    }
-}
-
-bool can_exec(const Inode &inode){
-    if (inode.st_mode & X_OK){
+bool has_perms(const Inode &inode, const int mode){
+    if(inode.st_mode & mode){
         return true;
     }
     else{
