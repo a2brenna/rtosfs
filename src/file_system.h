@@ -91,6 +91,8 @@ class File_System {
         Node _get_node(const char *path);
         Node _get_node(const std::deque<std::string> &decomp_path);
         Inode _get_inode(const char *path);
+        rtosfs::Directory _get_dir(const char *path);
+        rtosfs::Directory _get_dir(const std::deque<std::string> &decomp_path);
 
         //TODO:
         //Replace this with a smarter tree structure so we can invalidate

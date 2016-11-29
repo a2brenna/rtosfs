@@ -265,38 +265,47 @@ int File_System::getxattr(const char *path, const char *name, char *value, size_
     }
 }
 
+rtosfs::Directory File_System::_get_dir(const std::deque<std::string> &decomp_path){
+    const Inode inode = _get_node(decomp_path).inode();
+    if(inode.type != NODE_DIR){
+        throw E_NOT_DIR();
+    }
+    else{
+        const std::string serialized_dir = _backend->fetch(Ref(inode.data_ref, 32)).data();
+        rtosfs::Directory dir;
+        dir.ParseFromString(serialized_dir);
+        return dir;
+    }
+}
+
+rtosfs::Directory File_System::_get_dir(const char *path){
+    return _get_dir(decompose_path(path));
+}
+
 int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
     (void) offset;
     (void) fi;
 
-    try
-    {
+    try{
         const std::string dir_path(path);
-        const Inode inode = _get_inode(path);
-        if(inode.type != NODE_DIR){
-            return -ENOTDIR;
-        }
-        else{
-            const std::string serialized_dir = _backend->fetch(Ref(inode.data_ref, 32)).data();
-            rtosfs::Directory dir;
-            dir.ParseFromString(serialized_dir);
+        for(const auto &e: _get_dir(path).entries()){
+            const std::string entry_path = dir_path + "/" + e.name();
+            const auto entry_inode = _get_inode(entry_path.c_str());
 
-            for(const auto &e: dir.entries()){
-                const std::string entry_path = dir_path + "/" + e.name();
-                const auto entry_inode = _get_inode(entry_path.c_str());
+            struct stat st;
+            st.st_mode = entry_inode.st_mode;
 
-                struct stat st;
-                st.st_mode = entry_inode.st_mode;
-
-                if(filler(buf, e.name().c_str(), &st, 0)){
-                    break;
-                }
+            if(filler(buf, e.name().c_str(), &st, 0)){
+                break;
             }
-            return 0;
         }
+        return 0;
     }
     catch(E_DNE e){
         return -ENOENT;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
     }
 }
 
@@ -360,11 +369,7 @@ int File_System::create(const char *path, mode_t mode, struct fuse_file_info *fi
         decomposed_path.pop_back();
 
         //get existing directory
-        Node dir_node = _get_node(decomposed_path);
-        Inode dir_inode = dir_node.inode();
-        std::string serialized_dir = _backend->fetch(Ref(dir_inode.data_ref, 32)).data();
-        rtosfs::Directory dir;
-        dir.ParseFromString(serialized_dir);
+        rtosfs::Directory dir = _get_dir(decomposed_path);
 
         //check to see if object already exists
         for(const auto &e: dir.entries()){
@@ -374,6 +379,7 @@ int File_System::create(const char *path, mode_t mode, struct fuse_file_info *fi
         }
 
         //Create directory object with new file entry
+        std::string serialized_dir;
         auto new_entry = dir.add_entries();
         new_entry->set_name(name);
         new_entry->set_inode_ref(std::string(new_file_inode_ref.buf(), 32));
@@ -385,6 +391,8 @@ int File_System::create(const char *path, mode_t mode, struct fuse_file_info *fi
         _backend->store(new_dir_ref, new_dir);
 
         //Update directory inode and append to inode stack
+        Node dir_node = _get_node(decomposed_path);
+        Inode dir_inode = dir_node.inode();
         std::memcpy(dir_inode.data_ref, new_dir_ref.buf(), 32);
         dir_inode.st_atim = current_time;
         dir_inode.st_mtim = current_time;
