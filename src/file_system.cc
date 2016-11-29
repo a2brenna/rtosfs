@@ -13,15 +13,56 @@
 
 bool has_access(const Inode &inode, const int mode){
     const auto context = fuse_get_context();
-    if (! (((mode & R_OK) && !(inode.st_mode & R_OK)) ||
-        ((mode & W_OK) && !(inode.st_mode & W_OK)) ||
-        ((mode & X_OK) && !(inode.st_mode & X_OK)))
-    ){
-        return true;
+    if(mode & R_OK){
+        //Want read permissions
+        if (
+                //everyone has read permissions
+                ((inode.st_mode & S_IROTH) || (inode.st_mode & S_IRWXO)) ||
+                //group has read and user in group
+                (((inode.st_mode & S_IRGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)) ||
+                //owner has read and user is owner
+                (((inode.st_mode & S_IRUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid))
+           ){
+
+        }
+        else{
+            throw E_ACCESS();
+        }
     }
-    else{
-        throw E_ACCESS();
+    if(mode & W_OK){
+        //Want write permissions
+        if (
+                //everyone has write permissions
+                ((inode.st_mode & S_IWOTH) || (inode.st_mode & S_IRWXO)) ||
+                //group has write and user in group
+                (((inode.st_mode & S_IWGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)) ||
+                //owner has write and user is owner
+                (((inode.st_mode & S_IWUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid))
+           ){
+
+        }
+        else{
+            throw E_ACCESS();
+        }
     }
+    if(mode & X_OK){
+        //Want execute permissions
+        if (
+                //everyone has execute permissions
+                ((inode.st_mode & S_IXOTH) || (inode.st_mode & S_IRWXO)) ||
+                //group has execute and user in group
+                (((inode.st_mode & S_IXGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)) ||
+                //owner has execute and user is owner
+                (((inode.st_mode & S_IXUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid))
+           ){
+
+        }
+        else{
+            throw E_ACCESS();
+        }
+
+    }
+    return true;
 }
 
 timespec get_timespec(const std::chrono::high_resolution_clock::time_point &tp){
@@ -510,6 +551,7 @@ int File_System::read(const char *path, char *buf, size_t size, off_t off, struc
     }
 }
 
+//TODO: Fix this so it uses flags correctly
 int File_System::setxattr(const char *path, const char *name, const char *value, size_t size, int flags){
     try{
         Node node = _get_node(path);
