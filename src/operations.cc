@@ -117,8 +117,7 @@ int rtos_release(const char *path, struct fuse_file_info *){
 
 int rtos_fsync(const char *path, int, struct fuse_file_info *){
     _debug_log() << "rtos_fsync " << path << std::endl;
-    return -1;
-
+    return 0;
 }
 
 int rtos_setxattr(const char *path, const char *name, const char *value, size_t size, int flags){
@@ -167,8 +166,7 @@ int rtos_releasedir(const char *path, struct fuse_file_info *){
 
 int rtos_fsync_dir(const char *path, int, struct fuse_file_info *){
     _debug_log() << "rtos_fsync_dir " << path << std::endl;
-    return -1;
-
+    return 0;
 }
 
 void *rtos_init(struct fuse_conn_info *conn){
