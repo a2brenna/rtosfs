@@ -485,8 +485,13 @@ int File_System::chown(const char *path, uid_t uid, gid_t gid){
         Node current_node = _get_node(path);
         Inode i = current_node.inode();
 
-        i.st_uid = uid ;
-        i.st_gid = gid ;
+        //TODO: check for a macro or constant for nobody and nogroup...
+        if(uid != 4294967295){
+            i.st_uid = uid ;
+        }
+        if(gid != 4294967295){
+            i.st_gid = gid ;
+        }
 
         current_node.update_inode(i);
         return 0;

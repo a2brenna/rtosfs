@@ -64,7 +64,7 @@ int rtos_chmod(const char *path, mode_t mode){
 }
 
 int rtos_chown(const char *path, uid_t uid, gid_t gid){
-    _debug_log() << "rtos_chown " << path << std::endl;
+    _debug_log() << "rtos_chown " << path << " " << uid << " " << gid << std::endl;
     return fs->chown(path, uid, gid);
 }
 
