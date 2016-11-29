@@ -62,7 +62,7 @@ int rtos_readdir(const char *, void *, fuse_fill_dir_t, off_t,
 int rtos_fsync_dir(const char *, int, struct fuse_file_info *);
 void *rtos_init(struct fuse_conn_info *conn);
 void rtos_destroy(void *);
-int rtos_access(const char *, int);
+int rtos_access(const char *path, int mode);
 int rtos_create(const char *, mode_t, struct fuse_file_info *);
 int rtos_ftruncate(const char *, off_t, struct fuse_file_info *);
 int rtos_fgetattr(const char *, struct stat *, struct fuse_file_info *);

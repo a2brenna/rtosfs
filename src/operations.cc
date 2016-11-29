@@ -179,10 +179,9 @@ void rtos_destroy(void *){
 
 }
 
-int rtos_access(const char *path, int){
+int rtos_access(const char *path, int mode){
     _debug_log() << "rtos_access " << path << std::endl;
-    return -1;
-
+    return fs->access(path, mode);
 }
 
 int rtos_create(const char *path, mode_t mode, struct fuse_file_info *fi){
