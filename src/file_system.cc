@@ -11,6 +11,33 @@
 #include <deque>
 #include <string>
 
+bool can_read(const Inode &inode){
+    if (inode.st_mode & R_OK){
+        return true;
+    }
+    else{
+        throw E_PERM();
+    }
+}
+
+bool can_write(const Inode &inode){
+    if (inode.st_mode & W_OK){
+        return true;
+    }
+    else{
+        throw E_PERM();
+    }
+}
+
+bool can_exec(const Inode &inode){
+    if (inode.st_mode & X_OK){
+        return true;
+    }
+    else{
+        throw E_PERM();
+    }
+}
+
 timespec get_timespec(const std::chrono::high_resolution_clock::time_point &tp){
     const uint64_t nanos = tp.time_since_epoch().count();
     const uint64_t seconds = nanos / 1000000000;
@@ -52,35 +79,6 @@ Inode Node::inode(){
 void Node::update_inode(const Inode &inode){
     _backend->append(_log, (const char *)(&inode), sizeof(Inode));
 }
-
-/*
-std::map<std::string, Node> Node::list(){
-    std::map<std::string, Node> result;
-    const Inode current_inode = inode();
-
-    if(current_inode.type == NODE_DIR){
-        const Ref dir_ref(current_inode.ref, 32);
-        const std::string serialized_dir = _backend->fetch(dir_ref).data();
-        rtosfs::Directory current_directory;
-        current_directory.ParseFromString(serialized_dir);
-        for(const auto &e: current_directory.entries()){
-            if(result.count(e.name()) == 0){
-                const Ref inode_log(e.inode_ref().c_str(), 32);
-
-                result.insert(std::pair<std::string, Node>(e.name(), Node(inode_log, _backend)));
-            }
-            else{
-                throw E_BAD_DIR();
-            }
-        }
-    }
-    else{
-        throw E_NOT_DIR();
-    }
-
-    return result;
-}
-*/
 
 std::deque<std::string> decompose_path(const char *path){
     //TODO: be less lazy about this, boost split will return empty strings as well
