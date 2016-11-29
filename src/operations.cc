@@ -35,7 +35,7 @@ int rtos_mkdir(const char *path, mode_t){
 
 int rtos_unlink(const char *path){
     _debug_log() << "rtos_unlink " << path << std::endl;
-    return -1;
+    return fs->unlink(path);
 }
 
 int rtos_rmdir(const char *path){

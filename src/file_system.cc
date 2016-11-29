@@ -696,3 +696,49 @@ int File_System::access(const char *path, int mode){
         return -ENOENT;
     }
 }
+
+int File_System::unlink(const char *path){
+    try{
+        auto decomposed_path = decompose_path(path);
+
+        const std::string name = decomposed_path.back();
+
+        decomposed_path.pop_back();
+        Node directory_node = _get_node(decomposed_path);
+
+        Inode inode = directory_node.inode();
+        if(inode.type != NODE_DIR){
+            return -ENOTDIR;
+        }
+        else{
+            rtosfs::Directory dir = _get_dir(decomposed_path);
+
+            for(auto i = dir.entries().begin(); i != dir.entries().end(); i++){
+                if(i->name() == name){
+                    dir.mutable_entries()->erase(i);
+
+                    const Ref new_dir_ref = Ref();
+                    {
+                        std::string serialized_dir;
+                        dir.SerializeToString(&serialized_dir);
+                        const Object empty_file = Object(serialized_dir);
+                        _backend->store(new_dir_ref, empty_file);
+                    }
+                    std::memcpy(inode.data_ref, new_dir_ref.buf(), 32);
+                    directory_node.update_inode(inode);
+                    return 0;
+                }
+            }
+
+            return -ENOENT;
+        }
+
+        return 0;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
+    }
+    catch(E_DNE e){
+        return -ENOENT;
+    }
+}

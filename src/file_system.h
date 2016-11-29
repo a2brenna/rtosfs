@@ -83,6 +83,7 @@ class File_System {
         int write(const char *path, const char *buf, size_t size, off_t off,
                             struct fuse_file_info *fi);
         int access(const char *path, int mode);
+        int unlink(const char *path);
 
     private:
         Node _root;
