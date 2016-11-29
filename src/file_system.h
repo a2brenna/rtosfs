@@ -20,7 +20,7 @@ class E_NOT_FILE {};
 class E_BAD_DIR {};
 class E_BAD_SYM {};
 class E_DNE {};
-class E_PERM {};
+class E_ACCESS {};
 
 enum NODE_TYPE{
     NODE_DIR,

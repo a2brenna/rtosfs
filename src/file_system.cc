@@ -11,12 +11,16 @@
 #include <deque>
 #include <string>
 
-bool has_perms(const Inode &inode, const int mode){
-    if(inode.st_mode & mode){
+bool has_access(const Inode &inode, const int mode){
+    const auto context = fuse_get_context();
+    if (! (((mode & R_OK) && !(inode.st_mode & R_OK)) ||
+        ((mode & W_OK) && !(inode.st_mode & W_OK)) ||
+        ((mode & X_OK) && !(inode.st_mode & X_OK)))
+    ){
         return true;
     }
     else{
-        throw E_PERM();
+        throw E_ACCESS();
     }
 }
 
@@ -652,19 +656,8 @@ int File_System::write(const char *path, const char *buf, size_t size, off_t off
 int File_System::access(const char *path, int mode){
     try{
         const Inode inode = _get_inode(path);
-        const auto context = fuse_get_context();
 
-        if( (mode == F_OK) ){
-            return 0;
-        }
-        //if perm set in mode and NOT set in inode.st_mode for any of the perms, then no access
-        else if( ((mode & R_OK) && !(inode.st_mode & R_OK)) ||
-            ((mode & W_OK) && !(inode.st_mode & W_OK)) ||
-            ((mode & X_OK) && !(inode.st_mode & X_OK))
-        ){
-            return -EACCES;
-        }
-        else{
+        if( (mode == F_OK) || has_access(inode, mode) ){
             return 0;
         }
     }
@@ -673,6 +666,9 @@ int File_System::access(const char *path, int mode){
     }
     catch(E_DNE e){
         return -ENOENT;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
     }
 }
 
