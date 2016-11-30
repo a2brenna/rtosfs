@@ -86,6 +86,7 @@ class File_System {
         int access(const char *path, int mode);
         int unlink(const char *path);
         int mkdir(const char *path, mode_t t);
+        int rmdir(const char *path);
 
     private:
         Node _root;

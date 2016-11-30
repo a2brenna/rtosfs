@@ -40,7 +40,7 @@ int rtos_unlink(const char *path){
 
 int rtos_rmdir(const char *path){
     _debug_log() << "rtos_rmdir " << path << std::endl;
-    return -1;
+    return fs->rmdir(path);
 }
 
 int rtos_symlink(const char *path, const char *){

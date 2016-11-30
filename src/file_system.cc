@@ -145,7 +145,7 @@ File_System::File_System(const std::string &prefix, const std::shared_ptr<Object
             const auto mask = umask(0);
             umask(mask);
 
-            inode.st_mode = S_IFDIR | mask;
+            inode.st_mode = S_IFDIR | 0755;
             inode.type = NODE_DIR;
             std::memcpy(inode.data_ref, root_dir_ref.buf(), 32);
             std::memset(inode.xattr_ref, '\0', 32);
@@ -864,7 +864,7 @@ int File_System::unlink(const char *path){
     }
 }
 
-int File_System::mkdir(const char *path, mode_t t){
+int File_System::mkdir(const char *path, mode_t mode){
     try{
         auto decomposed_path = decompose_path(path);
         const std::string new_dir_name = decomposed_path.back();
@@ -888,19 +888,41 @@ int File_System::mkdir(const char *path, mode_t t){
                 }
             }
 
-            //Does not already exist
+            //Does not exist, add it
 
-            //Make a new empty directory and store it
-            const Ref new_dir_ref = Ref();
+            const Ref new_dir_log_ref = Ref();
+            Node new_dir_node(new_dir_log_ref, _backend);
+            Inode new_dir_inode;
             {
-                _backend->store(new_dir_ref, Object(""));
+                //Make a new empty directory and store it
+                const Ref new_dir_ref = Ref();
+                {
+                    _backend->store(new_dir_ref, Object(""));
+                }
+
+                _debug_log() << "New empty directory stored" << std::endl;
+
+                new_dir_inode.st_mode = S_IFDIR | mode;
+                new_dir_inode.type = NODE_DIR;
+                std::memcpy(new_dir_inode.data_ref, new_dir_ref.buf(), 32);
+                std::memset(new_dir_inode.xattr_ref, '\0', 32);
+                //New directories are empty strings in protobuf speak
+                new_dir_inode.st_size = 0;
+
+                const timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
+                new_dir_inode.st_atim = current_time;
+                new_dir_inode.st_mtim = current_time;
+                new_dir_inode.st_ctim = current_time;
+                new_dir_inode.st_uid = fuse_get_context()->uid;
+                new_dir_inode.st_gid = fuse_get_context()->gid;
             }
+            new_dir_node.update_inode(new_dir_inode);
 
             //Add entry to new directory in parent directory
             auto new_entry = parent_dir.add_entries();
             {
                 new_entry->set_name(new_dir_name);
-                new_entry->set_inode_ref(std::string(new_dir_ref.buf(), 32));
+                new_entry->set_inode_ref(std::string(new_dir_log_ref.buf(), 32));
             }
 
             //Store new instance of parent directory at a new ref
@@ -915,6 +937,27 @@ int File_System::mkdir(const char *path, mode_t t){
             std::memcpy(parent_inode.data_ref, new_parent_dir_ref.buf(), 32);
             parent_dir_node.update_inode(parent_inode);
             return 0;
+        }
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
+    }
+    catch(E_DNE e){
+        return -ENOENT;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
+}
+
+int File_System::rmdir(const char *path){
+    try{
+        const auto dir = _get_dir(decompose_path(path));
+        if(dir.entries().size() != 0){
+            return -ENOTEMPTY;
+        }
+        else{
+            return unlink(path);
         }
     }
     catch(E_NOT_DIR e){
