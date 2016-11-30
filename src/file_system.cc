@@ -863,3 +863,67 @@ int File_System::unlink(const char *path){
         return -EACCES;
     }
 }
+
+int File_System::mkdir(const char *path, mode_t t){
+    try{
+        auto decomposed_path = decompose_path(path);
+        const std::string new_dir_name = decomposed_path.back();
+
+        decomposed_path.pop_back();
+        Node parent_dir_node = _get_node(decomposed_path);
+
+        Inode parent_inode = parent_dir_node.inode();
+        has_access(parent_inode, W_OK);
+
+        if(parent_inode.type != NODE_DIR){
+            return -ENOTDIR;
+        }
+        else{
+            rtosfs::Directory parent_dir = _get_dir(decomposed_path);
+
+            //Check to see if it already exists
+            for(auto i = parent_dir.entries().begin(); i != parent_dir.entries().end(); i++){
+                if(i->name() == new_dir_name){
+                    return -EEXIST;
+                }
+            }
+
+            //Does not already exist
+
+            //Make a new empty directory and store it
+            const Ref new_dir_ref = Ref();
+            {
+                _backend->store(new_dir_ref, Object(""));
+            }
+
+            //Add entry to new directory in parent directory
+            auto new_entry = parent_dir.add_entries();
+            {
+                new_entry->set_name(new_dir_name);
+                new_entry->set_inode_ref(std::string(new_dir_ref.buf(), 32));
+            }
+
+            //Store new instance of parent directory at a new ref
+            const Ref new_parent_dir_ref = Ref();
+            {
+                std::string serialized_parent;
+                parent_dir.SerializeToString(&serialized_parent);
+                _backend->store(new_parent_dir_ref, Object(serialized_parent));
+            }
+
+            //Update parent inode with new parent ref
+            std::memcpy(parent_inode.data_ref, new_parent_dir_ref.buf(), 32);
+            parent_dir_node.update_inode(parent_inode);
+            return 0;
+        }
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
+    }
+    catch(E_DNE e){
+        return -ENOENT;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
+}

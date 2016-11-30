@@ -28,9 +28,9 @@ int rtos_mknod(const char *path, mode_t, dev_t){
     return -1;
 }
 
-int rtos_mkdir(const char *path, mode_t){
-    _debug_log() << "rtos_mkdir " << path << std::endl;
-    return -1;
+int rtos_mkdir(const char *path, mode_t t){
+    _debug_log() << "rtos_mkdir " << path << " " << t << std::endl;
+    return fs->mkdir(path, t);
 }
 
 int rtos_unlink(const char *path){

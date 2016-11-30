@@ -85,6 +85,7 @@ class File_System {
                             struct fuse_file_info *fi);
         int access(const char *path, int mode);
         int unlink(const char *path);
+        int mkdir(const char *path, mode_t t);
 
     private:
         Node _root;
