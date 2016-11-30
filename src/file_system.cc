@@ -13,54 +13,54 @@
 
 bool has_access(const Inode &inode, const int mode){
     const auto context = fuse_get_context();
+    _debug_log() << "has_acces(): context: " << context->uid << " " << context->gid << std::endl;
     if(mode & R_OK){
+        _debug_log() << "checking read perms" << std::endl;
         //Want read permissions
-        if (
-                //everyone has read permissions
-                ((inode.st_mode & S_IROTH) || (inode.st_mode & S_IRWXO)) ||
-                //group has read and user in group
-                (((inode.st_mode & S_IRGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)) ||
-                //owner has read and user is owner
-                (((inode.st_mode & S_IRUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid))
-           ){
-
+        if ((inode.st_mode & S_IROTH) || (inode.st_mode & S_IRWXO)){
+                _debug_log() << "everyone has read permissions" << std::endl;
+        }
+        else if(((inode.st_mode & S_IRGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)){
+                _debug_log() << "group has read permissions" << std::endl;
+        }
+        else if(((inode.st_mode & S_IRUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid)){
+                _debug_log() << "owner has read permissions" << std::endl;
         }
         else{
             throw E_ACCESS();
         }
     }
     if(mode & W_OK){
+        _debug_log() << "checking write perms" << std::endl;
         //Want write permissions
-        if (
-                //everyone has write permissions
-                ((inode.st_mode & S_IWOTH) || (inode.st_mode & S_IRWXO)) ||
-                //group has write and user in group
-                (((inode.st_mode & S_IWGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)) ||
-                //owner has write and user is owner
-                (((inode.st_mode & S_IWUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid))
-           ){
-
+        if (((inode.st_mode & S_IWOTH) == S_IWOTH) || ((inode.st_mode & S_IRWXO) == S_IRWXO)){
+                _debug_log() << "everyone has write permissions" << std::endl;
+        }
+        else if(((inode.st_mode & S_IWGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)){
+                _debug_log() << "group has write permissions" << std::endl;
+        }
+        else if(((inode.st_mode & S_IWUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid)){
+                _debug_log() << "owner has write permissions" << std::endl;
         }
         else{
             throw E_ACCESS();
         }
     }
     if(mode & X_OK){
-        //Want execute permissions
-        if (
-                //everyone has execute permissions
-                ((inode.st_mode & S_IXOTH) || (inode.st_mode & S_IRWXO)) ||
-                //group has execute and user in group
-                (((inode.st_mode & S_IXGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)) ||
-                //owner has execute and user is owner
-                (((inode.st_mode & S_IXUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid))
-           ){
-
+        _debug_log() << "checking exec perms" << std::endl;
+        //Want exec permissions
+        if ((inode.st_mode & S_IXOTH) || (inode.st_mode & S_IRWXO)){
+                _debug_log() << "everyone has exec permissions" << std::endl;
+        }
+        else if(((inode.st_mode & S_IXGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)){
+                _debug_log() << "group has exec permissions" << std::endl;
+        }
+        else if(((inode.st_mode & S_IXUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid)){
+                _debug_log() << "owner has exec permissions" << std::endl;
         }
         else{
             throw E_ACCESS();
         }
-
     }
     return true;
 }
@@ -166,6 +166,10 @@ Node File_System::_get_node(const std::deque<std::string> &decomp_path){
 
     for(const auto &entry_name: decomp_path){
         const auto current_inode = current_node.inode();
+        if(!has_access(current_inode, X_OK)){
+            throw E_ACCESS();
+        }
+
         //lookup next path element in current_inode directory and then set current_inode = next
         if(current_inode.type != NODE_DIR){
             throw E_NOT_DIR();
@@ -209,6 +213,16 @@ int File_System::getattr(const char *path, struct stat *stbuf){
     try{
         std::memset(stbuf, '\0', sizeof(struct stat));
 
+        {
+            auto dir_path = decompose_path(path);
+            if(dir_path.size() > 0){
+                dir_path.pop_back();
+            }
+            const Inode dir_inode = _get_node(dir_path).inode();
+            has_access(dir_inode, R_OK);
+        }
+
+        //Don't need perms on this inode... only its parent directory, see above
         const Inode inode = _get_inode(path);
 
         /* st_dev, st_blksize are ignored
@@ -239,6 +253,9 @@ int File_System::getattr(const char *path, struct stat *stbuf){
     catch(E_DNE e){
         return -(ENOENT);
     }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
 
 }
 
@@ -247,6 +264,7 @@ int File_System::getxattr(const char *path, const char *name, char *value, size_
         std::memset(value, '\0', val_size);
 
         const Inode inode = _get_inode(path);
+        has_access(inode, R_OK);
 
         const Ref xattr_ref(inode.xattr_ref, 32);
 
@@ -288,6 +306,9 @@ int File_System::getxattr(const char *path, const char *name, char *value, size_
     catch(E_OBJECT_DNE e){
         return -ENODATA;
     }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
 }
 
 rtosfs::Directory File_System::_get_dir(const std::deque<std::string> &decomp_path){
@@ -295,6 +316,10 @@ rtosfs::Directory File_System::_get_dir(const std::deque<std::string> &decomp_pa
     if(inode.type != NODE_DIR){
         throw E_NOT_DIR();
     }
+
+    //Need read access to list contents
+    has_access(inode, R_OK);
+
     const std::string serialized_dir = _backend->fetch(Ref(inode.data_ref, 32)).data();
     rtosfs::Directory dir;
     dir.ParseFromString(serialized_dir);
@@ -315,6 +340,7 @@ int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
         for(const auto &e: dir.entries()){
             const std::string entry_path = dir_path + "/" + e.name();
             const auto entry_inode = _get_inode(entry_path.c_str());
+            //Don't need to check permissions on each node... _get_dir checked permissions on parent
 
             struct stat st;
             st.st_mode = entry_inode.st_mode;
@@ -331,97 +357,110 @@ int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
     catch(E_NOT_DIR e){
         return -ENOTDIR;
     }
+    catch(E_ACCESS e){
+
+    }
 }
 
 int File_System::create(const char *path, mode_t mode, struct fuse_file_info *fi){
+    try{
+        const timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
 
-    const timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
-
-    //create new empty file ref
-    const Ref new_file_ref = Ref();
-    {
-        const Object empty_file = Object("");
-        _backend->store(new_file_ref, empty_file);
-    }
-
-    //create new empty xattr ref
-    const Ref new_xattr_ref = Ref();
-    {
-        rtosfs::Dictionary xattrs;
-        std::string serialized_xattrs;
-        xattrs.SerializeToString(&serialized_xattrs);
-        const Object empty_xattr = Object(serialized_xattrs);
-        _backend->store(new_xattr_ref, empty_xattr);
-    }
-
-    //create new empty file inode
-    Inode new_file_inode;
-    {
-        new_file_inode.st_mode = mode;
-        new_file_inode.st_nlink = 1;
-
-        //TODO: set this by looking at mode
-        new_file_inode.type = NODE_FILE;
-
-        std::memcpy(new_file_inode.data_ref, new_file_ref.buf(), 32);
-        std::memcpy(new_file_inode.xattr_ref, new_xattr_ref.buf(), 32);
-        new_file_inode.st_size = 0; //we know file is empty
-
-        //TODO: figure out if this should actually be zeroed out...
-        new_file_inode.st_atim = current_time;
-        new_file_inode.st_mtim = current_time;
-        new_file_inode.st_ctim = current_time;
-
-        //TODO: figure out how the hell to set these
-        new_file_inode.st_uid = 0;
-        new_file_inode.st_gid = 0;
-    }
-
-    const Ref new_file_inode_ref = Ref();
-    {
-        Node new_file_node(new_file_inode_ref, _backend);
-        new_file_node.update_inode(new_file_inode);
-    }
-
-    //Get Node for directory...
-    auto decomposed_path = decompose_path(path);
-    if(decomposed_path.size() == 0){
-        return -(EEXIST);
-    }
-    else{
-        const std::string name = decomposed_path.back();
-        decomposed_path.pop_back();
-
-        //get existing directory
-        rtosfs::Directory dir = _get_dir(decomposed_path);
-
-        //check to see if object already exists
-        for(const auto &e: dir.entries()){
-            if(e.name() == name){
-                return -(EEXIST);
-            }
+        //create new empty file ref
+        const Ref new_file_ref = Ref();
+        {
+            const Object empty_file = Object("");
+            _backend->store(new_file_ref, empty_file);
         }
 
-        //Create directory object with new file entry
-        std::string serialized_dir;
-        auto new_entry = dir.add_entries();
-        new_entry->set_name(name);
-        new_entry->set_inode_ref(std::string(new_file_inode_ref.buf(), 32));
-        dir.SerializeToString(&serialized_dir);
+        //create new empty xattr ref
+        const Ref new_xattr_ref = Ref();
+        {
+            rtosfs::Dictionary xattrs;
+            std::string serialized_xattrs;
+            xattrs.SerializeToString(&serialized_xattrs);
+            const Object empty_xattr = Object(serialized_xattrs);
+            _backend->store(new_xattr_ref, empty_xattr);
+        }
 
-        //Store new instance of directory object
-        const Ref new_dir_ref = Ref();
-        const Object new_dir = Object(serialized_dir);
-        _backend->store(new_dir_ref, new_dir);
+        //create new empty file inode
+        Inode new_file_inode;
+        {
+            new_file_inode.st_mode = mode;
+            new_file_inode.st_nlink = 1;
 
-        //Update directory inode and append to inode stack
-        Node dir_node = _get_node(decomposed_path);
-        Inode dir_inode = dir_node.inode();
-        std::memcpy(dir_inode.data_ref, new_dir_ref.buf(), 32);
-        dir_inode.st_atim = current_time;
-        dir_inode.st_mtim = current_time;
-        dir_node.update_inode(dir_inode);
-        return 0;
+            //TODO: set this by looking at mode
+            new_file_inode.type = NODE_FILE;
+
+            std::memcpy(new_file_inode.data_ref, new_file_ref.buf(), 32);
+            std::memcpy(new_file_inode.xattr_ref, new_xattr_ref.buf(), 32);
+            new_file_inode.st_size = 0; //we know file is empty
+
+            //TODO: figure out if this should actually be zeroed out...
+            new_file_inode.st_atim = current_time;
+            new_file_inode.st_mtim = current_time;
+            new_file_inode.st_ctim = current_time;
+
+
+            const auto context = fuse_get_context();
+            new_file_inode.st_uid = 0;
+            new_file_inode.st_gid = 0;
+        }
+
+        const Ref new_file_inode_ref = Ref();
+        {
+            Node new_file_node(new_file_inode_ref, _backend);
+            new_file_node.update_inode(new_file_inode);
+        }
+
+        //Get Node for directory...
+        auto decomposed_path = decompose_path(path);
+        if(decomposed_path.size() == 0){
+            return -(EEXIST);
+        }
+        else{
+            const std::string name = decomposed_path.back();
+            decomposed_path.pop_back();
+
+            //get existing directory
+            rtosfs::Directory dir = _get_dir(decomposed_path);
+
+            //check to see if object already exists
+            for(const auto &e: dir.entries()){
+                if(e.name() == name){
+                    return -(EEXIST);
+                }
+            }
+
+            //Create directory object with new file entry
+            std::string serialized_dir;
+            auto new_entry = dir.add_entries();
+            new_entry->set_name(name);
+            new_entry->set_inode_ref(std::string(new_file_inode_ref.buf(), 32));
+            dir.SerializeToString(&serialized_dir);
+
+            //Store new instance of directory object
+            const Ref new_dir_ref = Ref();
+            const Object new_dir = Object(serialized_dir);
+            _backend->store(new_dir_ref, new_dir);
+
+            //Update directory inode and append to inode stack
+            Node dir_node = _get_node(decomposed_path);
+            Inode dir_inode = dir_node.inode();
+            has_access(dir_inode, W_OK);
+
+            std::memcpy(dir_inode.data_ref, new_dir_ref.buf(), 32);
+            dir_inode.st_atim = current_time;
+            dir_inode.st_mtim = current_time;
+            dir_node.update_inode(dir_inode);
+            return 0;
+        }
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
     }
 }
 
@@ -448,6 +487,16 @@ int File_System::utimens(const char *path, const struct timespec tv[2]){
         Node current_node = _get_node(path);
         Inode i = current_node.inode();
 
+        //Special case, man pages indiciate that you don't necessarily need write perms if you're the owner
+        try{
+            has_access(i, W_OK);
+        }
+        catch(E_ACCESS e){
+            if(i.st_uid != fuse_get_context()->uid){
+                return -EACCES;
+            }
+        }
+
         i.st_atim = tv[0];
         i.st_mtim = tv[1];
 
@@ -460,12 +509,19 @@ int File_System::utimens(const char *path, const struct timespec tv[2]){
     catch(E_NOT_DIR e){
         return -ENOTDIR;
     }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
 }
 
 int File_System::chmod(const char *path, mode_t mode){
     try{
         Node current_node = _get_node(path);
         Inode i = current_node.inode();
+        //has_access(i, W_OK);
+        if(fuse_get_context()->uid != i.st_uid){
+            throw E_ACCESS();
+        }
 
         i.st_mode = mode;
 
@@ -478,12 +534,19 @@ int File_System::chmod(const char *path, mode_t mode){
     catch(E_NOT_DIR e){
         return -ENOTDIR;
     }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
 }
 
 int File_System::chown(const char *path, uid_t uid, gid_t gid){
     try{
         Node current_node = _get_node(path);
         Inode i = current_node.inode();
+        //has_access(i, W_OK);
+        if(fuse_get_context()->uid != i.st_uid){
+            throw E_ACCESS();
+        }
 
         //TODO: check for a macro or constant for nobody and nogroup...
         if(uid != 4294967295){
@@ -497,7 +560,13 @@ int File_System::chown(const char *path, uid_t uid, gid_t gid){
         return 0;
     }
     catch(E_DNE e){
-        return -1;
+        return -ENOENT;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
     }
 }
 
@@ -517,6 +586,7 @@ int File_System::open(const char *path, struct fuse_file_info *fi){
 int File_System::read(const char *path, char *buf, size_t size, off_t off, struct fuse_file_info *fi){
     try{
         const Inode i = _get_inode(path);
+        has_access(i, R_OK);
 
         if(i.type == NODE_DIR){
             return -EISDIR;
@@ -554,6 +624,9 @@ int File_System::read(const char *path, char *buf, size_t size, off_t off, struc
     catch(E_OBJECT_DNE e){
         return -EBADF;
     }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
 }
 
 //TODO: Fix this so it uses flags correctly
@@ -561,6 +634,7 @@ int File_System::setxattr(const char *path, const char *name, const char *value,
     try{
         Node node = _get_node(path);
         Inode inode = node.inode();
+        has_access(inode, W_OK);
 
         std::string serialized_xattrs = _backend->fetch(Ref(inode.xattr_ref, 32)).data();
         rtosfs::Dictionary xattrs;
@@ -592,7 +666,10 @@ int File_System::setxattr(const char *path, const char *name, const char *value,
         return 0;
     }
     catch(E_DNE e){
-        return -1;
+        return -ENOENT;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
     }
 }
 
@@ -600,6 +677,7 @@ int File_System::removexattr(const char *path, const char *name){
     try{
         Node node = _get_node(path);
         Inode inode = node.inode();
+        has_access(inode, W_OK);
 
         std::string serialized_xattrs = _backend->fetch(Ref(inode.xattr_ref, 32)).data();
         rtosfs::Dictionary old_xattrs;
@@ -634,7 +712,10 @@ int File_System::removexattr(const char *path, const char *name){
         return 0;
     }
     catch(E_DNE e){
-        return -1;
+        return -ENOENT;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
     }
 }
 
@@ -642,6 +723,7 @@ int File_System::truncate(const char *path, off_t off){
     try{
         Node node = _get_node(path);
         Inode inode = node.inode();
+        has_access(inode, W_OK);
 
         if(off != inode.st_size){
             //TODO:Replace with Object Store mutation tech?
@@ -663,6 +745,9 @@ int File_System::truncate(const char *path, off_t off){
     catch(E_NOT_DIR e){
         return -ENOTDIR;
     }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
 }
 
 int File_System::write(const char *path, const char *buf, size_t size, off_t off,
@@ -670,6 +755,7 @@ int File_System::write(const char *path, const char *buf, size_t size, off_t off
     try{
         Node node = _get_node(path);
         Inode inode = node.inode();
+        has_access(inode, W_OK);
 
         if(off == inode.st_size){
             //A straight append
@@ -697,17 +783,21 @@ int File_System::write(const char *path, const char *buf, size_t size, off_t off
     catch(E_DNE e){
         return -EIO;
     }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
 }
 
 int File_System::access(const char *path, int mode){
     try{
         const Inode inode = _get_inode(path);
 
-        if( (mode == F_OK) || has_access(inode, mode) ){
+        if( (mode == F_OK) ){
             return 0;
         }
         else{
-            return -EACCES;
+            has_access(inode, mode);
+            return 0;
         }
     }
     catch(E_NOT_DIR e){
@@ -731,6 +821,8 @@ int File_System::unlink(const char *path){
         Node directory_node = _get_node(decomposed_path);
 
         Inode inode = directory_node.inode();
+        has_access(inode, W_OK);
+
         if(inode.type != NODE_DIR){
             return -ENOTDIR;
         }
@@ -764,5 +856,8 @@ int File_System::unlink(const char *path){
     }
     catch(E_DNE e){
         return -ENOENT;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
     }
 }
