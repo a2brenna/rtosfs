@@ -142,7 +142,10 @@ File_System::File_System(const std::string &prefix, const std::shared_ptr<Object
 
         Inode inode;
         {
-            inode.st_mode = S_IFDIR | 0777;
+            const auto mask = umask(0);
+            umask(mask);
+
+            inode.st_mode = S_IFDIR | mask;
             inode.type = NODE_DIR;
             std::memcpy(inode.data_ref, root_dir_ref.buf(), 32);
             std::memset(inode.xattr_ref, '\0', 32);
@@ -152,8 +155,8 @@ File_System::File_System(const std::string &prefix, const std::shared_ptr<Object
             inode.st_atim = current_time;
             inode.st_mtim = current_time;
             inode.st_ctim = current_time;
-            inode.st_uid = 0;
-            inode.st_gid = 0;
+            inode.st_uid = getuid();
+            inode.st_gid = getgid();
         }
 
         _root.update_inode(inode);
@@ -401,10 +404,9 @@ int File_System::create(const char *path, mode_t mode, struct fuse_file_info *fi
             new_file_inode.st_mtim = current_time;
             new_file_inode.st_ctim = current_time;
 
-
             const auto context = fuse_get_context();
-            new_file_inode.st_uid = 0;
-            new_file_inode.st_gid = 0;
+            new_file_inode.st_uid = context->uid;
+            new_file_inode.st_gid = context->gid;
         }
 
         const Ref new_file_inode_ref = Ref();
