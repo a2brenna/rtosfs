@@ -6,12 +6,18 @@ PREFIX=/usr
 CXX=g++
 CXXFLAGS=-D_FILE_OFFSET_BITS=64 -L${LIBRARY_DIR} -I${INCLUDE_DIR} -O2 -g -std=c++14 -fPIC -Wall -Wextra -march=native
 
-all: rtosfs
+all: rtosfs rtosfsctl
 
 install: all
 
-rtosfs: src/rtosfs.cc operations.o disk_format.o file_system.o debug.o
-	${CXX} ${CXXFLAGS} -o rtosfs src/rtosfs.cc operations.o disk_format.o file_system.o debug.o -lfuse -lboost_program_options -lsmplsocket -lprotobuf -lrrtos -lsodium
+rtosfsctl: src/rtosfsctl.cc disk_format.o inode.o
+	${CXX} ${CXXFLAGS} -o rtosfsctl src/rtosfsctl.cc disk_format.o inode.o -lboost_program_options -lsmplsocket -lprotobuf -lrrtos -lsodium
+
+rtosfs: src/rtosfs.cc operations.o disk_format.o file_system.o debug.o inode.o
+	${CXX} ${CXXFLAGS} -o rtosfs src/rtosfs.cc operations.o disk_format.o file_system.o debug.o inode.o -lfuse -lboost_program_options -lsmplsocket -lprotobuf -lrrtos -lsodium
+
+inode.o: src/inode.cc src/inode.h
+	${CXX} ${CXXFLAGS} -c src/inode.cc -o inode.o
 
 operations.o: src/operations.cc src/operations.h
 	${CXX} ${CXXFLAGS} -c src/operations.cc -o operations.o
