@@ -87,6 +87,9 @@ class File_System {
         int unlink(const char *path);
         int mkdir(const char *path, mode_t t);
         int rmdir(const char *path);
+        int symlink(const char *to, const char *from);
+        int readlink(const char *path, char *linkbuf, size_t size);
+
 
     private:
         Node _root;

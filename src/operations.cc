@@ -14,8 +14,9 @@ int rtos_getattr(const char *path, struct stat *stbuf){
 }
 
 int rtos_readlink(const char *path, char *linkbuf, size_t size){
-    _debug_log() << "rtos_realink " << path << " " << linkbuf << " " << size << std::endl;
-    return -1;
+    _debug_log() << "rtos_readlink " << path << " " << linkbuf << " " << size << std::endl;
+    const auto r = fs->readlink(path, linkbuf, size);
+    _debug_log() << "rtos_readlink returned : " << r << std::endl;
 }
 
 int rtos_getdir(const char *path, fuse_dirh_t, fuse_dirfil_t){
@@ -43,9 +44,9 @@ int rtos_rmdir(const char *path){
     return fs->rmdir(path);
 }
 
-int rtos_symlink(const char *path, const char *){
-    _debug_log() << "rtos_symlink " << path << std::endl;
-    return -1;
+int rtos_symlink(const char *to, const char *from){
+    _debug_log() << "rtos_symlink " << from << " " << to << std::endl;
+    return fs->symlink(to, from);
 }
 
 int rtos_rename(const char *path, const char *){

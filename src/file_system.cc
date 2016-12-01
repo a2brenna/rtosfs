@@ -970,3 +970,102 @@ int File_System::rmdir(const char *path){
         return -EACCES;
     }
 }
+
+int File_System::symlink(const char *to, const char *from){
+    try{
+        if( ((strnlen(to, 4096) >= 4096) || (strnlen(from, 4096) >= 4096)) ){
+            return -ENAMETOOLONG;
+        }
+
+        const auto path = decompose_path(from);
+        const std::string name = path.back();
+        auto dir_path = path;
+        dir_path.pop_back();
+
+        auto source_dir = _get_dir(dir_path);
+        for(const auto &e: source_dir.entries()){
+            if(name == e.name()){
+                return -EEXIST;
+            }
+        }
+
+        const std::string dest(to);
+        const Ref dest_ref = Ref();
+        {
+            _backend->store(dest_ref, Object(dest));
+        }
+
+        const Ref new_link_log_ref = Ref();
+        {
+            Inode new_link_inode;
+            {
+                new_link_inode.st_mode = S_IFLNK | 0777;
+                new_link_inode.type = NODE_SYM;
+                std::memcpy(new_link_inode.data_ref, dest_ref.buf(), 32);
+                std::memset(new_link_inode.xattr_ref, '\0', 32);
+                new_link_inode.st_size = dest.size();
+                new_link_inode.st_nlink = 1;
+
+                const timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
+                new_link_inode.st_atim = current_time;
+                new_link_inode.st_mtim = current_time;
+                new_link_inode.st_ctim = current_time;
+                new_link_inode.st_uid = fuse_get_context()->uid;
+                new_link_inode.st_gid = fuse_get_context()->gid;
+            }
+
+            Node new_link_node(new_link_log_ref, _backend);
+            new_link_node.update_inode(new_link_inode);
+        }
+
+        auto new_entry = source_dir.add_entries();
+        new_entry->set_name(name);
+        new_entry->set_inode_ref(std::string(new_link_log_ref.buf(), 32));
+
+        std::string serialized_dir;
+        source_dir.SerializeToString(&serialized_dir);
+        const auto new_dir_ref = Ref();
+        _backend->store(new_dir_ref, serialized_dir);
+
+        Node dir_node = _get_node(dir_path);
+        auto dir_inode = dir_node.inode();
+        std::memcpy(dir_inode.data_ref, new_dir_ref.buf(), 32);
+        dir_node.update_inode(dir_inode);
+        return 0;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
+    }
+    catch(E_DNE e){
+        return -ENOENT;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
+}
+
+int File_System::readlink(const char *path, char *linkbuf, size_t size){
+    try{
+        Node link_node = _get_node(path);
+        const Inode link_inode = link_node.inode();
+        const std::string target = _backend->fetch(Ref(link_inode.data_ref, 32)).data();
+        _debug_log() << "Target: " << target << std::endl;
+
+        const size_t to_copy = std::min(target.size(), size);
+        std::strncpy(linkbuf, target.c_str(), to_copy);
+
+        //readlink(...) standard library call does NOT append a null terminator, but we do cuz libfuse seems to expect it...
+        linkbuf[to_copy] = '\0';
+
+        return to_copy;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
+    }
+    catch(E_DNE e){
+        return -ENOENT;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
+}
