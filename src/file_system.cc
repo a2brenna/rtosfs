@@ -13,50 +13,37 @@
 
 bool has_access(const Inode &inode, const int mode){
     const auto context = fuse_get_context();
-    _debug_log() << "has_acces(): context: " << context->uid << " " << context->gid << std::endl;
     if(mode & R_OK){
-        _debug_log() << "checking read perms" << std::endl;
         //Want read permissions
         if ((inode.st_mode & S_IROTH) || (inode.st_mode & S_IRWXO)){
-                _debug_log() << "everyone has read permissions" << std::endl;
         }
         else if(((inode.st_mode & S_IRGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)){
-                _debug_log() << "group has read permissions" << std::endl;
         }
         else if(((inode.st_mode & S_IRUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid)){
-                _debug_log() << "owner has read permissions" << std::endl;
         }
         else{
             throw E_ACCESS();
         }
     }
     if(mode & W_OK){
-        _debug_log() << "checking write perms" << std::endl;
         //Want write permissions
         if (((inode.st_mode & S_IWOTH) == S_IWOTH) || ((inode.st_mode & S_IRWXO) == S_IRWXO)){
-                _debug_log() << "everyone has write permissions" << std::endl;
         }
         else if(((inode.st_mode & S_IWGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)){
-                _debug_log() << "group has write permissions" << std::endl;
         }
         else if(((inode.st_mode & S_IWUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid)){
-                _debug_log() << "owner has write permissions" << std::endl;
         }
         else{
             throw E_ACCESS();
         }
     }
     if(mode & X_OK){
-        _debug_log() << "checking exec perms" << std::endl;
         //Want exec permissions
         if ((inode.st_mode & S_IXOTH) || (inode.st_mode & S_IRWXO)){
-                _debug_log() << "everyone has exec permissions" << std::endl;
         }
         else if(((inode.st_mode & S_IXGRP) || (inode.st_mode & S_IRWXG)) && (inode.st_gid == context->gid)){
-                _debug_log() << "group has exec permissions" << std::endl;
         }
         else if(((inode.st_mode & S_IXUSR) || (inode.st_mode & S_IRWXU)) && (inode.st_uid == context->uid)){
-                _debug_log() << "owner has exec permissions" << std::endl;
         }
         else{
             throw E_ACCESS();
