@@ -331,7 +331,7 @@ int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
         return -ENOTDIR;
     }
     catch(E_ACCESS e){
-
+        return -EACCES;
     }
 }
 
