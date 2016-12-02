@@ -62,7 +62,7 @@ timespec get_timespec(const std::chrono::high_resolution_clock::time_point &tp){
 }
 
 Node::Node(const Ref &log, const std::shared_ptr<Object_Store> &backend):
-    _log(log)
+    _log(log.buf(), 32)
 {
     _backend = backend;
 }
@@ -118,7 +118,7 @@ File_System::File_System(const std::string &prefix, const std::shared_ptr<Object
             inode.st_mode = S_IFDIR | 0755;
             inode.type = NODE_DIR;
             std::memcpy(inode.data_ref, root_dir_ref.buf(), 32);
-            std::memset(inode.xattr_ref, '\0', 32);
+            std::memset(inode.xattr_ref, (char)0, 32);
             inode.st_size = dir_size;
 
             const timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
@@ -704,7 +704,7 @@ int File_System::truncate(const char *path, off_t off){
 
             Ref new_data_ref = Ref();
             _backend->store(new_data_ref, Object(file));
-            std::memcpy(&(inode.data_ref), new_data_ref.buf(), 32);
+            std::memcpy(inode.data_ref, new_data_ref.buf(), 32);
 
             inode.st_size = off;
             node.update_inode(inode);
@@ -746,7 +746,7 @@ int File_System::write(const char *path, const char *buf, size_t size, off_t off
             _backend->store(new_data_ref, Object(current_file));
 
             inode.st_size = current_file.size();
-            std::memcpy(&(inode.data_ref), new_data_ref.buf(), 32);
+            std::memcpy(inode.data_ref, new_data_ref.buf(), 32);
 
             node.update_inode(inode);
             return size;
@@ -875,7 +875,7 @@ int File_System::mkdir(const char *path, mode_t mode){
                 new_dir_inode.st_mode = S_IFDIR | mode;
                 new_dir_inode.type = NODE_DIR;
                 std::memcpy(new_dir_inode.data_ref, new_dir_ref.buf(), 32);
-                std::memset(new_dir_inode.xattr_ref, '\0', 32);
+                std::memset(new_dir_inode.xattr_ref, (char)0, 32);
                 //New directories are empty strings in protobuf speak
                 new_dir_inode.st_size = 0;
 
@@ -892,7 +892,7 @@ int File_System::mkdir(const char *path, mode_t mode){
             auto new_entry = parent_dir.add_entries();
             {
                 new_entry->set_name(new_dir_name);
-                new_entry->set_inode_ref(std::string(new_dir_log_ref.buf(), 32));
+                new_entry->set_inode_ref(new_dir_log_ref.buf(), 32);
             }
 
             //Store new instance of parent directory at a new ref
@@ -972,7 +972,7 @@ int File_System::symlink(const char *to, const char *from){
                 new_link_inode.st_mode = S_IFLNK | 0777;
                 new_link_inode.type = NODE_SYM;
                 std::memcpy(new_link_inode.data_ref, dest_ref.buf(), 32);
-                std::memset(new_link_inode.xattr_ref, '\0', 32);
+                std::memset(new_link_inode.xattr_ref, (char)0, 32);
                 new_link_inode.st_size = dest.size();
                 new_link_inode.st_nlink = 1;
 
