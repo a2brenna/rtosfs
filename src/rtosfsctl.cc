@@ -19,7 +19,7 @@ int main(int argc, char *argv[]){
     desc.add_options()
         ("uds", po::value<std::string>(&RTOSD), "Unix Domain Socket of rtosd")
         ("node", po::value<std::string>(&NODE), "Base 16 node reference to query")
-        ("dir", po::value<std::string>(&NODE), "Base 16 directory reference to query")
+        ("dir", po::value<std::string>(&DIRECTORY), "Base 16 directory reference to query")
         ("file", po::value<std::string>(&FILE), "Base 16 file reference to query")
     ;
 
@@ -58,8 +58,16 @@ int main(int argc, char *argv[]){
         }
     }
     else if(DIRECTORY.size() > 0){
-        const Ref dir_ref(DIRECTORY);
-
+        rtosfs::Directory dir;
+        {
+            const std::string encoded = base16_decode(DIRECTORY);
+            const Ref dir_ref = Ref(encoded.c_str(), 32);
+            const std::string raw = backend->fetch(dir_ref).data();
+            dir.ParseFromString(raw);
+        }
+        for(const auto &e: dir.entries()){
+            std::cout << e.name() << " " << base16_encode(e.inode_ref()) << std::endl;
+        }
     }
     else if(FILE.size() > 0){
         const Ref file_ref(FILE);
