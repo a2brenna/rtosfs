@@ -70,8 +70,13 @@ int main(int argc, char *argv[]){
         }
     }
     else if(FILE.size() > 0){
-        const Ref file_ref(FILE);
-
+        std::string file;
+        {
+            const std::string encoded = base16_decode(FILE);
+            const Ref dir_ref = Ref(encoded.c_str(), 32);
+            file = backend->fetch(dir_ref).data();
+        }
+        std::cout << file << std::endl;
     }
     else{
         std::cout << desc << std::endl;
