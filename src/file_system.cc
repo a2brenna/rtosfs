@@ -11,6 +11,8 @@
 #include <deque>
 #include <string>
 
+#include <ctgmath>
+
 bool has_access(const Inode &inode, const int mode){
     const auto context = fuse_get_context();
     if(mode & R_OK){
@@ -207,7 +209,7 @@ int File_System::getattr(const char *path, struct stat *stbuf){
         */
 
         //Note: I don't think st_blocks is meaningful without a block size
-        //stbuf->st_blocks = 0;
+        stbuf->st_blocks = ceil(inode.st_size / 512.0);
 
         stbuf->st_mode = inode.st_mode;
         stbuf->st_nlink = inode.st_nlink;
