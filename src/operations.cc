@@ -190,10 +190,9 @@ int rtos_create(const char *path, mode_t mode, struct fuse_file_info *fi){
     return fs->create(path, mode, fi);
 }
 
-int rtos_ftruncate(const char *path, off_t, struct fuse_file_info *){
-    _debug_log() << "rtos_ftruncate " << path << std::endl;
-    return -1;
-
+int rtos_ftruncate(const char *path, off_t off, struct fuse_file_info *){
+    _debug_log() << "rtos_ftruncate " << path << " " << off << std::endl;
+    return fs->truncate(path, off);
 }
 
 int rtos_fgetattr(const char *path, struct stat *stbuff, struct fuse_file_info *){
