@@ -1023,7 +1023,6 @@ int File_System::readlink(const char *path, char *linkbuf, size_t size){
         Node link_node = _get_node(path);
         const Inode link_inode = link_node.inode();
         const std::string target = _backend->fetch(Ref(link_inode.data_ref, 32)).data();
-        _debug_log() << "Target: " << target << std::endl;
 
         const size_t to_copy = std::min(target.size(), size);
         std::strncpy(linkbuf, target.c_str(), to_copy);
@@ -1031,7 +1030,7 @@ int File_System::readlink(const char *path, char *linkbuf, size_t size){
         //readlink(...) standard library call does NOT append a null terminator, but we do cuz libfuse seems to expect it...
         linkbuf[to_copy] = '\0';
 
-        return to_copy;
+        return 0;
     }
     catch(E_NOT_DIR e){
         return -ENOTDIR;

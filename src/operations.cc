@@ -17,6 +17,7 @@ int rtos_readlink(const char *path, char *linkbuf, size_t size){
     _debug_log() << "rtos_readlink " << path << " " << linkbuf << " " << size << std::endl;
     const auto r = fs->readlink(path, linkbuf, size);
     _debug_log() << "rtos_readlink returned : " << r << std::endl;
+    return r;
 }
 
 int rtos_getdir(const char *path, fuse_dirh_t, fuse_dirfil_t){
