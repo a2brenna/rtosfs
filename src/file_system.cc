@@ -457,6 +457,7 @@ int File_System::lock(const char *path, struct fuse_file_info *fi, int cmd, stru
     return 0;
 }
 
+//TODO: Support null tv = set current time
 int File_System::utimens(const char *path, const struct timespec tv[2]){
     try{
         Node current_node = _get_node(path);
@@ -487,6 +488,16 @@ int File_System::utimens(const char *path, const struct timespec tv[2]){
     catch(E_ACCESS e){
         return -EACCES;
     }
+}
+
+//TODO: Support null buf = set current time
+int File_System::utime(const char *path, struct utimbuf *buf){
+    timespec tv[2];
+    tv[0].tv_sec = buf->actime;
+    tv[0].tv_nsec = 0;
+    tv[1].tv_sec = buf->modtime;
+    tv[1].tv_nsec = 0;
+    return utimens(path, tv);
 }
 
 int File_System::chmod(const char *path, mode_t mode){

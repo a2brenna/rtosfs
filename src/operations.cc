@@ -75,9 +75,9 @@ int rtos_truncate(const char *path, off_t off){
     return fs->truncate(path, off);
 }
 
-int rtos_utime(const char *path, struct utimbuf *){
+int rtos_utime(const char *path, struct utimbuf *buf){
     _debug_log() << "rtos_utime " << path << std::endl;
-    return -1;
+    return fs->utime(path, buf);
 }
 
 int rtos_open(const char *path, struct fuse_file_info *fi){

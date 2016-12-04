@@ -7,6 +7,7 @@
 #include <rtos/object_store.h>
 #include <rtos/ref_log.h>
 #include <time.h>
+#include <utime.h>
 
 #include "disk_format.pb.h"
 #include "inode.h"
@@ -51,6 +52,7 @@ class File_System {
         int create(const char *path, mode_t mode, struct fuse_file_info *fi);
         int lock(const char *path, struct fuse_file_info *fi, int cmd, struct flock *fl);
         int utimens(const char *path, const struct timespec tv[2]);
+        int utime(const char *path, struct utimbuf *buf);
         int chown(const char *path, uid_t uid, gid_t gid);
         int chmod(const char *path, mode_t mode);
         int open(const char *path, struct fuse_file_info *fi);
