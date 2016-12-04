@@ -800,6 +800,7 @@ int File_System::access(const char *path, int mode){
 int File_System::unlink(const char *path){
     try{
         auto decomposed_path = decompose_path(path);
+        Node object_node = _get_node(decomposed_path);
 
         const std::string name = decomposed_path.back();
 
@@ -834,6 +835,13 @@ int File_System::unlink(const char *path){
 
             return -ENOENT;
         }
+
+        //Now reduce link count on Node
+        Inode object_inode = object_node.inode();
+        assert(object_inode.st_nlink > 0);
+
+        object_inode.st_nlink--;
+        object_node.update_inode(object_inode);
 
         return 0;
     }
