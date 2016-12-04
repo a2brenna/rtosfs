@@ -426,6 +426,7 @@ int File_System::create(const char *path, mode_t mode, struct fuse_file_info *fi
             std::memcpy(dir_inode.data_ref, new_dir_ref.buf(), 32);
             dir_inode.st_atim = current_time;
             dir_inode.st_mtim = current_time;
+            dir_inode.st_size = serialized_dir.size();
             dir_node.update_inode(dir_inode);
             return 0;
         }
@@ -880,6 +881,7 @@ int File_System::mkdir(const char *path, mode_t mode){
                 std::memset(new_dir_inode.xattr_ref, (char)0, 32);
                 //New directories are empty strings in protobuf speak
                 new_dir_inode.st_size = 0;
+                new_dir_inode.st_nlink = 1;
 
                 const timespec current_time = get_timespec(std::chrono::high_resolution_clock::now());
                 new_dir_inode.st_atim = current_time;
