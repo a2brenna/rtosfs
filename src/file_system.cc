@@ -79,6 +79,10 @@ void Node::update_inode(const Inode &inode){
     _backend->append(_log, (const char *)(&inode), sizeof(Inode));
 }
 
+Ref Node::ref() const{
+    return _log;
+}
+
 std::deque<std::string> decompose_path(const char *path){
     //TODO: be less lazy about this, boost split will return empty strings as well
     std::vector<std::string> d;
@@ -829,21 +833,20 @@ int File_System::unlink(const char *path){
                     }
                     std::memcpy(inode.data_ref, new_dir_ref.buf(), 32);
                     directory_node.update_inode(inode);
+
+                    //Now reduce link count on Node
+                    Inode object_inode = object_node.inode();
+                    assert(object_inode.st_nlink > 0);
+
+                    object_inode.st_nlink--;
+                    object_node.update_inode(object_inode);
+
                     return 0;
                 }
             }
 
             return -ENOENT;
         }
-
-        //Now reduce link count on Node
-        Inode object_inode = object_node.inode();
-        assert(object_inode.st_nlink > 0);
-
-        object_inode.st_nlink--;
-        object_node.update_inode(object_inode);
-
-        return 0;
     }
     catch(E_NOT_DIR e){
         return -ENOTDIR;
@@ -1049,6 +1052,58 @@ int File_System::readlink(const char *path, char *linkbuf, size_t size){
         //readlink(...) standard library call does NOT append a null terminator, but we do cuz libfuse seems to expect it...
         linkbuf[to_copy] = '\0';
 
+        return 0;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
+    }
+    catch(E_DNE e){
+        return -ENOENT;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
+}
+
+int File_System::link(const char *to, const char *from){
+    try{
+        if( ((strnlen(to, 4096) >= 4096) || (strnlen(from, 4096) >= 4096)) ){
+            return -ENAMETOOLONG;
+        }
+
+        const auto path = decompose_path(from);
+        const std::string name = path.back();
+        auto dir_path = path;
+        dir_path.pop_back();
+
+        auto source_dir = _get_dir(dir_path);
+        for(const auto &e: source_dir.entries()){
+            if(name == e.name()){
+                return -EEXIST;
+            }
+        }
+
+
+        Node to_node = _get_node(to);
+        {
+            Inode to_inode = to_node.inode();
+            to_inode.st_nlink++;
+            to_node.update_inode(to_inode);
+        }
+
+        auto new_entry = source_dir.add_entries();
+        new_entry->set_name(name);
+        new_entry->set_inode_ref(to_node.ref().buf(), 32);
+
+        std::string serialized_dir;
+        source_dir.SerializeToString(&serialized_dir);
+        const auto new_dir_ref = Ref();
+        _backend->store(new_dir_ref, serialized_dir);
+
+        Node dir_node = _get_node(dir_path);
+        auto dir_inode = dir_node.inode();
+        std::memcpy(dir_inode.data_ref, new_dir_ref.buf(), 32);
+        dir_node.update_inode(dir_inode);
         return 0;
     }
     catch(E_NOT_DIR e){

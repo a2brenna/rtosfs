@@ -31,6 +31,7 @@ class Node {
 
         Inode inode();
         void update_inode(const Inode &inode);
+        Ref ref() const;
 
     private:
         std::shared_ptr<Object_Store> _backend;
@@ -69,6 +70,7 @@ class File_System {
         int rmdir(const char *path);
         int symlink(const char *to, const char *from);
         int readlink(const char *path, char *linkbuf, size_t size);
+        int link(const char *to, const char *from);
 
 
     private:

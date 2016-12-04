@@ -55,9 +55,9 @@ int rtos_rename(const char *path, const char *){
     return -1;
 }
 
-int rtos_link(const char *path, const char *){
-    _debug_log() << "rtos_link " << path << std::endl;
-    return -1;
+int rtos_link(const char *to, const char *from){
+    _debug_log() << "rtos_link " << from << " " << to << std::endl;
+    return fs->link(to, from);
 }
 
 int rtos_chmod(const char *path, mode_t mode){
