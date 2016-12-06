@@ -71,6 +71,7 @@ class File_System {
         int symlink(const char *to, const char *from);
         int readlink(const char *path, char *linkbuf, size_t size);
         int link(const char *to, const char *from);
+        int rename(const char *source, const char *dest);
 
 
     private:

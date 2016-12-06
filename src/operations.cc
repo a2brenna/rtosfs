@@ -50,9 +50,9 @@ int rtos_symlink(const char *to, const char *from){
     return fs->symlink(to, from);
 }
 
-int rtos_rename(const char *path, const char *){
-    _debug_log() << "rtos_rename " << path << std::endl;
-    return -1;
+int rtos_rename(const char *source, const char *dest){
+    _debug_log() << "rtos_rename " << source << " " << dest << std::endl;
+    fs->rename(source, dest);
 }
 
 int rtos_link(const char *to, const char *from){

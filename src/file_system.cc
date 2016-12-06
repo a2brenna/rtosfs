@@ -96,6 +96,10 @@ std::deque<std::string> decompose_path(const char *path){
     return decomposed;
 }
 
+std::deque<std::string> decompose_path(const std::string &path){
+    return decompose_path(path.c_str());
+}
+
 File_System::File_System(const std::string &prefix, const std::shared_ptr<Object_Store> &backend):
     _root(Ref(prefix), backend),
     _backend(backend)
@@ -1105,6 +1109,164 @@ int File_System::link(const char *to, const char *from){
         std::memcpy(dir_inode.data_ref, new_dir_ref.buf(), 32);
         dir_node.update_inode(dir_inode);
         return 0;
+    }
+    catch(E_NOT_DIR e){
+        return -ENOTDIR;
+    }
+    catch(E_DNE e){
+        return -ENOENT;
+    }
+    catch(E_ACCESS e){
+        return -EACCES;
+    }
+}
+
+std::deque<std::string> get_dir_path(std::deque<std::string> file_path){
+    assert(file_path.size() > 0);
+    file_path.pop_back();
+    return file_path;
+}
+
+int File_System::rename(const char *source, const char *dest){
+    try{
+        const std::string _source(source);
+        const std::string _dest(dest);
+        if(_source == dest){
+            return 0;
+        }
+
+        const std::deque<std::string> source_file_path = decompose_path(_source);
+        const std::deque<std::string> dest_file_path = decompose_path(_dest);
+        const std::deque<std::string> source_dir_path = get_dir_path(source_file_path);
+        const std::deque<std::string> dest_dir_path = get_dir_path(dest_file_path);
+        const std::string source_file_name = source_file_path.back();
+        const std::string dest_file_name = dest_file_path.back();
+
+        (void)source_file_path;
+        (void)dest_file_path;
+
+        Node source_dir_node = _get_node(source_dir_path);
+        Inode source_dir_inode = source_dir_node.inode();
+        has_access(source_dir_inode, W_OK);
+
+        Node dest_dir_node = _get_node(dest_dir_path);
+        Inode dest_dir_inode = dest_dir_node.inode();
+        has_access(dest_dir_inode, W_OK);
+
+        if(source_dir_path == dest_dir_path){
+            (void)dest_dir_path;
+            (void)dest_dir_node;
+            (void)dest_dir_inode;
+            _debug_log() << source_dir_node.ref().base16() << std::endl;
+
+            rtosfs::Directory dir = _get_dir(source_dir_path);
+            rtosfs::Directory new_dir;
+            (void)source_dir_path;
+
+            Ref file_ref;
+
+            //create new dir
+            bool exists = false;
+            for(const auto &d: dir.entries()){
+                if(d.name() == source_file_name){
+                    file_ref = Ref(d.inode_ref().c_str(), 32);
+                    exists = true;
+                }
+                else if(d.name() == dest_file_name){
+                    //don't copy
+                }
+                else{
+                    auto n = new_dir.add_entries();
+                    n->set_name(d.name());
+                    n->set_inode_ref(d.inode_ref());
+                }
+            }
+            if(!exists){
+                return -ENOENT;
+            }
+
+            //modify new dir
+            auto new_dir_ent = new_dir.add_entries();
+            new_dir_ent->set_name(dest_file_name);
+            new_dir_ent->set_inode_ref(file_ref.buf(), 32);
+
+            //serialize and store source dir
+            const Ref new_dir_ref = Ref();
+            std::string serialized_dir;
+            new_dir.SerializeToString(&serialized_dir);
+            _backend->store(new_dir_ref, Object(serialized_dir));
+
+            //update source dir inode
+            std::memcpy(source_dir_inode.data_ref, new_dir_ref.buf(), 32);
+            source_dir_node.update_inode(source_dir_inode);
+
+            return 0;
+        }
+        else{
+            rtosfs::Directory source_dir = _get_dir(source_dir_path);
+            rtosfs::Directory new_source_dir;
+            Ref file_ref;
+            {
+                //modify source dir
+                bool exists = false;
+                for(const auto &d: source_dir.entries()){
+                    if(d.name() == source_file_name){
+                        file_ref = Ref(d.inode_ref().c_str(), 32);
+                        exists = true;
+                    }
+                    else{
+                        auto n = new_source_dir.add_entries();
+                        n->set_name(d.name());
+                        n->set_inode_ref(d.inode_ref());
+                    }
+                }
+                if(!exists){
+                    return -ENOENT;
+                }
+            }
+            (void)source_dir;
+
+            //modify new dir
+            const rtosfs::Directory old_dest_dir = _get_dir(dest_dir_path);
+            rtosfs::Directory new_dest_dir;
+            {
+                for(const auto &e: old_dest_dir.entries()){
+                    if(e.name() != dest_file_name){
+                        auto n = new_dest_dir.add_entries();
+                        n->set_name(e.name());
+                        n->set_inode_ref(e.inode_ref());
+                    }
+                }
+                auto new_dir_ent = new_dest_dir.add_entries();
+                new_dir_ent->set_name(dest_file_name);
+                new_dir_ent->set_inode_ref(file_ref.buf(), 32);
+            }
+
+            //serialize and store source dir
+            const Ref new_source_dir_ref = Ref();
+            {
+                std::string serialized_source_dir;
+                new_source_dir.SerializeToString(&serialized_source_dir);
+                _backend->store(new_source_dir_ref, Object(serialized_source_dir));
+            }
+
+            //serialize and store new dir
+            const Ref new_dest_dir_ref = Ref();
+            {
+                std::string serialized_dest_dir;
+                new_dest_dir.SerializeToString(&serialized_dest_dir);
+                _backend->store(new_dest_dir_ref, Object(serialized_dest_dir));
+            }
+
+            //update target dir inode
+            std::memcpy(dest_dir_inode.data_ref, new_dest_dir_ref.buf(), 32);
+            dest_dir_node.update_inode(dest_dir_inode);
+            //update source dir inode
+            std::memcpy(source_dir_inode.data_ref, new_source_dir_ref.buf(), 32);
+            source_dir_node.update_inode(source_dir_inode);
+
+            return 0;
+        }
     }
     catch(E_NOT_DIR e){
         return -ENOTDIR;
