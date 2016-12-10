@@ -752,6 +752,7 @@ int File_System::write(const char *path, const char *buf, size_t size, off_t off
         has_access(inode, W_OK);
 
         if(off == inode.st_size){
+            //TODO: Possible security hole, re-using the ref when appending can leak information if we allow the fetching of underlying ref via xattr and subsequent direct queries of the object store
             //A straight append
             _backend->append(Ref(inode.data_ref, 32), buf, size);
             inode.st_size = inode.st_size + size;
@@ -761,10 +762,10 @@ int File_System::write(const char *path, const char *buf, size_t size, off_t off
         else{
             //Rewriting a portion of the file or punching a hole
             std::string current_file = _backend->fetch(Ref(inode.data_ref, 32)).data();
-            current_file.resize(off);
-            current_file.append(buf, size);
+            current_file.resize(std::max(off + size, current_file.size()));
+            std::memcpy(&current_file[off], buf, size);
 
-            Ref new_data_ref = Ref();
+            const Ref new_data_ref = Ref();
             _backend->store(new_data_ref, Object(current_file));
 
             inode.st_size = current_file.size();
