@@ -320,6 +320,15 @@ int File_System::readdir(const char *path, void *buf, fuse_fill_dir_t filler, of
     try{
         const std::string dir_path(path);
         const rtosfs::Directory dir = _get_dir(path);
+        //add .
+        {
+            const std::string foo(".");
+            const auto dir_inode = _get_inode(path);
+            struct stat st;
+            st.st_mode = dir_inode.st_mode;
+            filler(buf, foo.c_str(), &st, 0);
+        }
+        //add ..
         for(const auto &e: dir.entries()){
             const std::string entry_path = dir_path + "/" + e.name();
             const auto entry_inode = _get_inode(entry_path.c_str());
