@@ -36,6 +36,7 @@ src/disk_format.pb.h: disk_format.proto
 
 clean:
 	rm -f rtosfs
+	rm -f rtosfsctl
 	rm -f *.o
 	rm -f *.so
 	rm -f *.a
