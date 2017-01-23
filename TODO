@@ -1,0 +1,4 @@
+Implement '..' at top level
+Use https://github.com/Hnasar/pjdfstest to test correctness
+Implement internal file handles
+Minimize syncing
